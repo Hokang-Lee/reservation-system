@@ -5,31 +5,49 @@
 <title>予約システム</title>
 
 <style>
-body { font-family: sans-serif; max-width: 700px; margin: 40px auto; }
-.title { font-weight: bold; margin-top: 15px; padding: 5px; }
-.row { padding: 5px; border-bottom: 1px solid #ddd; }
-.empty { color: blue; cursor: pointer; }
-.filled { color: black; cursor: pointer; }
-</style>
+body {
+  font-family: sans-serif;
+  max-width: 700px;
+  margin: 40px auto;
+}
 
+.title {
+  font-weight: bold;
+  margin-top: 15px;
+  padding: 5px;
+}
+
+.row {
+  padding: 6px;
+  border-bottom: 1px solid #ddd;
+  cursor: pointer;
+}
+
+.empty { color: blue; }
+.filled { color: black; }
+</style>
 </head>
+
 <body>
 
 <h2>予約システム</h2>
 <button onclick="exportCSV()">CSV出力</button>
 <div id="app"></div>
 
+<!-- ✅ Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 
 <script>
-// ✅ Firebase設定（ここを書き換える）
+// ✅ Firebase設定（ここ書き換え）
+
 const firebaseConfig = {
   apiKey: "AIzaSyDvjXQ5xX_jwcHcXnESjjJalCq2xqL2qIw",
   authDomain: "reservation-2026.firebaseapp.com",
   databaseURL: "https://reservation-2026-default-rtdb.firebaseio.com/",
   projectId: "reservation-2026"
 };
+
 
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
@@ -46,6 +64,7 @@ const seatRuleConfig = {
   ],
   validUntil: "2026-08-03"
 };
+
 
 // ✅ 開始番号計算
 function getSeatStartNumber(dateStr) {
@@ -69,7 +88,7 @@ function getSeatStartNumber(dateStr) {
 }
 
 
-// ✅ 日付生成（日曜・月曜のみ）
+// ✅ 日付生成
 function generateDates() {
   const result = [];
 
@@ -104,6 +123,7 @@ const SEAT_COUNT = 5;
 
 // ✅ 描画
 function render(data) {
+
   const app = document.getElementById("app");
   app.innerHTML = "";
 
@@ -115,6 +135,7 @@ function render(data) {
     const d = new Date(date);
     const day = d.getDay();
 
+    // 曜日
     let dayText = "";
     if (day === 0) dayText = "日";
     if (day === 1) dayText = "月";
@@ -132,9 +153,11 @@ function render(data) {
     }
 
     title.className = "title";
-    title.textContent = `■ 予約（${date} ${dayText}）［開始番号：${start}］`;
+    title.textContent =
+      `■ 予約（${date} ${dayText}）［開始番号：${start}］`;
 
     app.appendChild(title);
+
 
     for (let i = 0; i < SEAT_COUNT; i++) {
       const seat = start + i;
@@ -142,7 +165,6 @@ function render(data) {
 
       const row = document.createElement("div");
 
-      // ✅ 表示
       if (!name) {
         row.textContent = `${seat} 空き`;
         row.className = "row empty";
@@ -151,32 +173,32 @@ function render(data) {
         row.className = "row filled";
       }
 
-      // ✅ 全ユーザー編集可能
+      // ✅ ワンクリック編集（今回仕様）
       row.onclick = () => {
-        const action = prompt(
-          "操作:\n1: 新規/上書き\n2: 名前変更\n3: 削除"
+
+        const current = data?.[date]?.[seat] || "";
+
+        const input = prompt(
+          "名前を入力してください\n（空欄で削除）",
+          current
         );
 
         const ref = db.ref(`reservations/${date}/${seat}`);
 
-        if (action === "1") {
-          const name = prompt("名前入力");
-          if (name) ref.set(name);
-        }
+        if (input === null) return;
 
-        if (action === "2") {
-          const newName = prompt("新しい名前");
-          if (newName) ref.set(newName);
-        }
-
-        if (action === "3") {
-          if (confirm("削除しますか？")) ref.remove();
+        if (input.trim() === "") {
+          ref.remove(); // ✅ 削除
+        } else {
+          ref.set(input.trim()); // ✅ 上書き
         }
       };
 
       app.appendChild(row);
     }
+
   });
+
 }
 
 
@@ -189,16 +211,17 @@ db.ref("reservations").on("value", snap => {
 // ✅ CSV出力
 function exportCSV() {
   db.ref("reservations").once("value", snap => {
+
     let csv = "日付,席番号,名前\n";
     const data = snap.val() || {};
 
-    Object.entries(data).forEach(([d,v])=>{
-      Object.entries(v).forEach(([s,n])=>{
-        csv += `${d},${s},${n}\n`;
+    Object.entries(data).forEach(([date, seats]) => {
+      Object.entries(seats).forEach(([seat, name]) => {
+        csv += `${date},${seat},${name}\n`;
       });
     });
 
-    const blob = new Blob([csv], {type: "text/csv"});
+    const blob = new Blob([csv], {type:"text/csv"});
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
     a.download = "reservations.csv";
