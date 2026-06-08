@@ -16,7 +16,7 @@ body {
   font-weight: bold;
   margin-top: 20px;
   padding: 10px;
-  font-size: 22px;
+  font-size: 24px;
 }
 
 .row {
@@ -36,7 +36,7 @@ body {
 /* ✅ 満席 */
 .full-row {
   background-color: #ffeaea;
-  border-left: 6px solid red;
+  border-left: 6px solid blue;
 }
 
 /* 空きラベル */
@@ -70,11 +70,11 @@ button {
 @media (max-width: 600px) {
 
   body {
-    font-size: 20px;
+    font-size: 24px;
   }
 
   .title {
-    font-size: 24px;
+    font-size: 28px;
   }
 
   .row {
@@ -216,7 +216,7 @@ function render(data) {
     }
 
     title.className = "title";
-    title.textContent = `■ 予約（${date} ${dayText}）`;
+    title.textContent = `■ 読み手（${date} ${dayText}）`;
     app.appendChild(title);
 
     // ✅ 使用数計算
