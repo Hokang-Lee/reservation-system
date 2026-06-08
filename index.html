@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>チャレンジャー予約システム</title>
+<style>
+body { font-family: sans-serif; max-width: 700px; margin: 40px auto; }
+.title { font-weight: bold; margin-top: 10px; }
+.row { padding: 5px; }
+.empty { color: blue; cursor: pointer; }
+.filled { color: black; }
+</style>
+</head>
+<body>
+
+<h2>チャレンジャー予約システム</h2>
+<button onclick="enterAdmin()">管理者モード</button>
+<button onclick="exportCSV()">CSV出力</button>
+<div id="app"></div>
+
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyDvjXQ5xX_jwcHcXnESjjJalCq2xqL2qIw",
+  authDomain: "reservation-2026.firebaseapp.com",
+  databaseURL: "https://reservation-2026-default-rtdb.firebaseio.com/",
+  projectId: "reservation-2026"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+const seatRuleConfig = {
+  weekIncrement: 35,
+  
+  anchors: [
+    { date: "2026-06-14", start: 131, dow: 0 }, // 日曜
+    { date: "2026-06-15", start: 136, dow: 1 }, // 月曜
+    { date: "2026-06-28", start: 1,   dow: 0 },
+    { date: "2026-06-29", start: 6,   dow: 1 }
+  ],
+  validUntil: "2026-08-03"
+};
+
+function getSeatStartNumber(dateStr) {
+  const date = new Date(dateStr);
+  const dow = date.getDay(); // ← 追加
+  const anchors = seatRuleConfig.anchors
+    .map(a => ({ ...a, d: new Date(a.date) }))
+    .filter(a => a.d <= date && a.dow === dow) // ← ここ重要
+    .sort((a, b) => b.d - a.d);
+  if (anchors.length === 0) return null;
+  const base = anchors[0];
+  const weeks = Math.floor((date - base.d) / (7*24*60*60*1000));
+  return base.start + weeks * seatRuleConfig.weekIncrement;
+}
+
+function generateDates() {
+  const result = [];
+
+  const today = new Date();
+  today.setHours(0,0,0,0);
+
+  const end = new Date(seatRuleConfig.validUntil);
+  end.setHours(23,59,59,999); // ✅ 追加
+
+  for (let d = new Date("2026-01-01"); d <= end; d.setDate(d.getDate()+1)) {
+    d.setHours(0,0,0,0);
+
+    if (d < today) continue;
+
+    const day = d.getDay();
+    if (day === 0 || day === 1) {
+
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth()+1).padStart(2,"0");
+      const dd = String(d.getDate()).padStart(2,"0");
+
+      result.push(`${yyyy}-${mm}-${dd}`);
+    }
+  }
+
+  return result;
+}
+
+
+const dates = generateDates();
+let isAdmin = false;
+
+function enterAdmin() {
+  const code = prompt("管理者コード");
+  if (code === "manshokenmei") {
+    isAdmin = true;
+    alert("管理者モード");
+  }
+}
+
+function reserve(date, seat) {
+  const name = prompt("名前入力");
+  if (!name) return;
+  const ref = db.ref(`reservations/${date}/${seat}`);
+  ref.transaction(c => c ? undefined : name);
+}
+
+function render(data) {
+  const app = document.getElementById("app");
+  app.innerHTML = "";
+
+  dates.forEach(date => {
+    const start = getSeatStartNumber(date);
+    if (start === null) return
+
+    const title = document.createElement("div");
+    title.className = "title";
+
+    const d = new Date(date);
+    const day = d.getDay();
+
+    // ✅ 曜日文字
+    let dayText = "";
+    if (day === 0) dayText = "日";
+    if (day === 1) dayText = "月";
+
+    // ✅ 色設定（カレンダー風）
+    if (day === 0) {
+      title.style.color = "red";          // 日曜は赤
+      title.style.backgroundColor = "#ffeaea";
+    }
+    if (day === 1) {
+      title.style.color = "green";        // 月曜は緑
+      title.style.backgroundColor = "#eaffea";
+    }
+    if (day === 0) {
+      title.style.borderTop = "2px solid #ccc";
+    }
+
+    // ✅ 表示文字（曜日追加）
+    title.textContent =
+      `■ 予約（${date} ${dayText}）［開始番号：${start}］`;
+
+    app.appendChild(title);
+
+
+    for (let i=0;i<5;i++) {
+      const seat = start + i;
+      const name = data?.[date]?.[seat] || "";
+
+      const row = document.createElement("div");
+      if (!name) {
+        row.textContent = `${seat} 空き`;
+        row.className = "row empty";
+        row.onclick = ()=>reserve(date, seat);
+      } else {
+        row.textContent = `${seat} ${name}`;
+        row.className = "row filled";
+        if (isAdmin) {
+          row.onclick = ()=>{
+            if(confirm("削除しますか？")) {
+              db.ref(`reservations/${date}/${seat}`).remove();
+            }
+          }
+        }
+      }
+      app.appendChild(row);
+    }
+  });
+}
+
+db.ref("reservations").on("value", snap => render(snap.val()));
+
+function exportCSV() {
+  if (!isAdmin) return alert("管理者のみ");
+  db.ref("reservations").once("value", snap => {
+    let csv = "日付,席番号,名前"
+;
+    const data = snap.val()||{};
+    Object.entries(data).forEach(([d,v])=>{
+      Object.entries(v).forEach(([s,n])=>{
+        csv += `${d},${s},${n}
+`;
+      });
+    });
+    const blob = new Blob([csv]);
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "reservations.csv";
+    a.click();
+  });
+}
+</script>
+
+</body>
+</html>
