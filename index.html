@@ -1,5 +1,3 @@
-
-
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -11,62 +9,93 @@ body {
   font-family: sans-serif;
   max-width: 700px;
   margin: 20px auto;
+  font-size: 18px; /* ✅ 基本大きめ */
 }
 
 .title {
   font-weight: bold;
   margin-top: 20px;
-  padding: 8px;
+  padding: 10px;
+  font-size: 22px;
 }
 
 .row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px;
+  padding: 14px;
   border-bottom: 1px solid #ddd;
 }
 
-/* ✅ 空き行（強調） */
+/* ✅ 空き */
 .empty-row {
   background-color: #e8ffe8;
-  border-left: 5px solid green;
+  border-left: 6px solid green;
 }
 
-/* ✅ 空きラベル */
+/* ✅ 満席 */
+.full-row {
+  background-color: #ffeaea;
+  border-left: 6px solid red;
+}
+
+/* 空きラベル */
 .empty-label {
   color: green;
   font-weight: bold;
+  font-size: 20px;
 }
 
-/* 表示 */
+/* 通常文字 */
 .label {
-  font-size: 16px;
+  font-size: 20px;
 }
 
 /* ボタン */
 button {
-  padding: 6px 12px;
-  font-size: 14px;
+  padding: 12px 16px;
+  font-size: 16px;
   cursor: pointer;
+  background-color: #f5f5f5;
+  border-radius: 5px;
 }
 
-/* スマホ */
+/* ✅ 満席ボタン */
+.full-button {
+  background-color: #fdd;
+  border: 1px solid red;
+}
+
+/* ✅ スマホ（さらに大きく） */
 @media (max-width: 600px) {
+
+  body {
+    font-size: 20px;
+  }
+
+  .title {
+    font-size: 24px;
+  }
+
   .row {
     flex-direction: column;
     align-items: stretch;
-  }
-
-  button {
-    margin-top: 5px;
-    width: 100%;
-    font-size: 16px;
-    padding: 10px;
+    padding: 16px;
   }
 
   .label {
+    font-size: 22px;
+  }
+
+  .empty-label {
+    font-size: 22px;
+  }
+
+  button {
+    margin-top: 10px;
+    width: 100%;
     font-size: 18px;
+    padding: 16px;
   }
 }
 </style>
@@ -80,13 +109,13 @@ button {
 
 <div id="app"></div>
 
-<!-- ✅ Firebase -->
+<!-- ✅ Firebase（ここ重要：タグ形式） -->
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 
 <script>
-// ✅ Firebase設定
 
+// ✅ Firebase設定
 const firebaseConfig = {
   apiKey: "AIzaSyDvjXQ5xX_jwcHcXnESjjJalCq2xqL2qIw",
   authDomain: "reservation-2026.firebaseapp.com",
@@ -98,7 +127,7 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
 
-// ✅ ルール
+// ✅ 予約ルール
 const seatRuleConfig = {
   weekIncrement: 35,
   anchors: [
@@ -125,18 +154,15 @@ function getSeatStartNumber(dateStr) {
 
   const base = anchors[0];
 
-  const weeks = Math.floor(
-    (date - base.d) / (7 * 24 * 60 * 60 * 1000)
-  );
+  const weeks = Math.floor((date - base.d) / (7*24*60*60*1000));
 
   return base.start + weeks * seatRuleConfig.weekIncrement;
 }
 
 
-// ✅ 日付
+// ✅ 日付リスト生成
 function generateDates() {
   const result = [];
-
   const today = new Date();
   today.setHours(0,0,0,0);
 
@@ -145,7 +171,6 @@ function generateDates() {
 
   for (let d = new Date("2026-01-01"); d <= end; d.setDate(d.getDate()+1)) {
     d.setHours(0,0,0,0);
-
     if (d < today) continue;
 
     const day = d.getDay();
@@ -178,8 +203,7 @@ function render(data) {
 
     const d = new Date(date);
     const day = d.getDay();
-
-    let dayText = (day === 0) ? "日" : "月";
+    const dayText = (day === 0) ? "日" : "月";
 
     const title = document.createElement("div");
 
@@ -192,27 +216,29 @@ function render(data) {
     }
 
     title.className = "title";
-    title.textContent =
-      `■ 予約（${date} ${dayText}）`;
-    
+    title.textContent = `■ 予約（${date} ${dayText}）`;
     app.appendChild(title);
 
-    // ✅ 残数計算
+    // ✅ 使用数計算
     let used = 0;
     for (let i = 0; i < SEAT_COUNT; i++) {
       const seat = start + i;
       if (data?.[date]?.[seat]) used++;
     }
+
     const remain = SEAT_COUNT - used;
 
-    // ✅ 残数表示
     const remainDiv = document.createElement("div");
-    remainDiv.style.marginBottom = "5px";
-    remainDiv.innerHTML =
-      `<b>🟢 空き：あと${remain}席</b>`;
+
+    if (remain === 0) {
+      remainDiv.innerHTML = `<b style="color:red;">🔴 満席</b>`;
+    } else {
+      remainDiv.innerHTML = `<b style="color:green;">🟢 空き：あと${remain}席</b>`;
+    }
+
     app.appendChild(remainDiv);
 
-
+    // ✅ 各席
     for (let i=0; i<SEAT_COUNT; i++) {
 
       const seat = start + i;
@@ -222,13 +248,13 @@ function render(data) {
       row.className = "row";
 
       if (!name) row.classList.add("empty-row");
+      if (remain === 0) row.classList.add("full-row");
 
       const label = document.createElement("div");
       label.className = "label";
 
       if (!name) {
-        label.innerHTML =
-          `${seat} <span class="empty-label">🟢 空き</span>`;
+        label.innerHTML = `${seat} <span class="empty-label">🟢 空き</span>`;
       } else {
         label.textContent = `${seat} ${name}`;
       }
@@ -236,12 +262,13 @@ function render(data) {
       const btn = document.createElement("button");
       btn.textContent = "編集";
 
+      if (remain === 0) {
+        btn.classList.add("full-button");
+      }
+
       btn.onclick = () => {
 
-        const input = prompt(
-          "名前を入力（空欄で削除）",
-          name
-        );
+        const input = prompt("名前入力（空欄で削除）", name);
 
         if (input === null) return;
 
@@ -256,6 +283,7 @@ function render(data) {
 
       row.appendChild(label);
       row.appendChild(btn);
+
       app.appendChild(row);
     }
 
@@ -263,13 +291,13 @@ function render(data) {
 }
 
 
-// ✅ リアルタイム
+// ✅ リアルタイム更新
 db.ref("reservations").on("value", snap => {
   render(snap.val());
 });
 
 
-// ✅ CSV
+// ✅ CSV出力
 function exportCSV() {
   db.ref("reservations").once("value", snap => {
 
@@ -289,6 +317,7 @@ function exportCSV() {
     a.click();
   });
 }
+
 </script>
 
 </body>
