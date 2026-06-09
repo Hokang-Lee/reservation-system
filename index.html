@@ -1,5 +1,6 @@
 <!DOCTYPE html>
-<html lang><html lang="ja">
+<html lang="ja">
+<head>
 <meta charset="UTF-8">
 <title>訓読チャレンジ予約システム</title>
 
@@ -79,7 +80,6 @@ body {
   cursor: pointer;
 }
 
-.doc-btn { background: #f3e8ff; }
 .audio-btn { background: #e0f2fe; }
 
 /* ボタン */
@@ -91,8 +91,8 @@ body {
   cursor: pointer;
 }
 </style>
-</head>
 
+</head>
 <body>
 
 <h2>訓読チャレンジ予約システム</h2>
@@ -105,12 +105,29 @@ body {
 
 <script>
 
-// ===== 音声管理（完全排他）=====
+// ===== 音声管理 =====
 let currentAudio = null;
 let currentBtn = null;
 let currentRow = null;
 
-// ===== 3桁化 =====
+// ✅ ページ離脱で強制停止
+window.addEventListener("beforeunload", () => {
+  if (currentAudio) {
+    currentAudio.pause();
+    currentAudio.src = "";
+  }
+});
+
+window.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "hidden") {
+    if (currentAudio) {
+      currentAudio.pause();
+      currentAudio.src = "";
+    }
+  }
+});
+
+// ===== 3桁 =====
 function formatSeat(seat){
   return String(seat).padStart(3,"0");
 }
@@ -122,11 +139,10 @@ const firebaseConfig = {
   databaseURL: "https://reservation-2026-default-rtdb.firebaseio.com/",
   projectId: "reservation-2026"
 };
-
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-// ===== 座席ルール（完全）=====
+// ===== 座席ルール =====
 const seatRuleConfig = {
   weekIncrement: 35,
   anchors: [
@@ -138,7 +154,7 @@ const seatRuleConfig = {
   validUntil: "2026-08-03"
 };
 
-// ===== 正しい番号計算 =====
+// ===== 番号計算 =====
 function getSeatStartNumber(dateStr) {
 
   const date = new Date(dateStr);
@@ -175,12 +191,10 @@ function generateDates() {
   today.setHours(0,0,0,0);
 
   const end = new Date(seatRuleConfig.validUntil);
-  end.setHours(23,59,59,999);
 
   for (let d = new Date("2026-01-01"); d <= end; d.setDate(d.getDate()+1)) {
 
     d.setHours(0,0,0,0);
-
     if (d < today) continue;
 
     const day = d.getDay();
@@ -228,9 +242,9 @@ function render(data) {
     title.textContent = `■ 読み手（${date} ${day === 0 ? "日" : "月"}）`;
     app.appendChild(title);
 
-    // ✅ 残席（完全復元）
+    // ✅ 残席
     let used = 0;
-    for (let i = 0; i < SEAT_COUNT; i++) {
+    for (let i=0;i<SEAT_COUNT;i++) {
       if (data?.[date]?.[start+i]) used++;
     }
 
@@ -246,10 +260,10 @@ function render(data) {
 
     app.appendChild(remainDiv);
 
-    // ✅ 各席
-    for (let i = 0; i < SEAT_COUNT; i++) {
+    // ✅ 席表示
+    for (let i=0;i<SEAT_COUNT;i++) {
 
-      const seat = start + i;
+      const seat = start+i;
       const name = data?.[date]?.[seat] || "";
 
       const row = document.createElement("div");
@@ -264,7 +278,7 @@ function render(data) {
       num.className = "num";
       num.textContent = seat;
 
-      // ✅ 音声（完全制御）
+      // 🎧 音声
       const btn = document.createElement("button");
       btn.className = "icon-btn audio-btn";
       btn.textContent = "🔊";
@@ -273,19 +287,19 @@ function render(data) {
 
         const id = formatSeat(seat);
 
+        // 同じなら停止
         if (currentBtn === btn) {
           currentAudio.pause();
           currentAudio.src="";
-
-          btn.textContent = "🔊";
+          btn.textContent="🔊";
           if (currentRow) currentRow.classList.remove("playing");
-
-          currentAudio = null;
-          currentBtn = null;
-          currentRow = null;
+          currentAudio=null;
+          currentBtn=null;
+          currentRow=null;
           return;
         }
 
+        // 前の音停止
         if (currentAudio) {
           currentAudio.pause();
           currentAudio.src="";
@@ -295,21 +309,22 @@ function render(data) {
         if (currentRow) currentRow.classList.remove("playing");
 
         const audio = new Audio();
+
         const list = [
           `audio/${id}.m4a`,
           `audio/${id}.aac`
         ];
 
-        let i = 0;
+        let idx = 0;
 
         const play = () => {
-          if (i >= list.length) {
+          if (idx >= list.length) {
             alert("音声なし:" + id);
             return;
           }
-          audio.src = list[i];
+          audio.src = list[idx];
           audio.play().catch(()=>{
-            i++;
+            idx++;
             play();
           });
         };
@@ -370,12 +385,9 @@ db.ref("reservations").on("value", snap=>{
 
 // ===== CSV =====
 function exportCSV(){
-
   db.ref("reservations").once("value", snap=>{
-
     let csv="日付,席番号,名前\n";
     const data=snap.val()||{};
-
     Object.entries(data).forEach(([d,v])=>{
       Object.entries(v).forEach(([s,n])=>{
         csv+=`${d},${s},${n}\n`;
