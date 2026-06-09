@@ -92,7 +92,7 @@ button {
 
 <body>
 
-<h2>予約システム</h2>
+<h2>訓読チャレンジ予約システム</h2>
 <button onclick="exportCSV()">CSV出力</button>
 
 <div id="app"></div>
@@ -196,8 +196,9 @@ function render(data) {
       title.style.color = "red";
       title.style.background = "#ffeaea";
     } else {
-      title.style.color = "green";
-      title.style.background = "#eaffea";
+    // ✅ 月曜（黒＋グレー）
+      title.style.color = "black";
+      title.style.background = "#f0f0f0";
     }
 
     title.className = "title";
