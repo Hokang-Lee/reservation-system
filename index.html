@@ -1,8 +1,7 @@
 <!DOCTYPE html>
-<html lang="ja">
-<head>
+<html lang><html lang="ja">
 <meta charset="UTF-8">
-<title>予約システム</title>
+<title>訓読チャレンジ予約システム</title>
 
 <style>
 body {
@@ -31,17 +30,17 @@ body {
 
 /* 状態 */
 .empty-row {
-  background-color: #e8ffe8;
+  background: #e8ffe8;
   border-left: 6px solid green;
 }
 
 .filled-row {
-  background-color: #e0edff;
+  background: #e0edff;
   border-left: 6px solid #2563eb;
 }
 
 .full-row {
-  background-color: #eaf3ff;
+  background: #eaf3ff;
   border-left: 6px solid #3399ff;
 }
 
@@ -80,20 +79,20 @@ body {
   cursor: pointer;
 }
 
-.audio-btn {
-  background: #e0f2fe;
-}
+.doc-btn { background: #f3e8ff; }
+.audio-btn { background: #e0f2fe; }
 
 /* ボタン */
 .edit-btn {
-  background: #dbeafe;
-  border: 2px solid #3b82f6;
   padding: 10px;
+  border-radius: 6px;
+  border: 2px solid #3b82f6;
+  background: #dbeafe;
   cursor: pointer;
 }
 </style>
-
 </head>
+
 <body>
 
 <h2>訓読チャレンジ予約システム</h2>
@@ -106,17 +105,17 @@ body {
 
 <script>
 
-// ✅ 音声状態（完全排他）
+// ===== 音声管理（完全排他）=====
 let currentAudio = null;
 let currentBtn = null;
 let currentRow = null;
 
-// ✅ 3桁
+// ===== 3桁化 =====
 function formatSeat(seat){
   return String(seat).padStart(3,"0");
 }
 
-// ✅ Firebase設定
+// ===== Firebase =====
 const firebaseConfig = {
   apiKey: "AIzaSyDvjXQ5xX_jwcHcXnESjjJalCq2xqL2qIw",
   authDomain: "reservation-2026.firebaseapp.com",
@@ -127,7 +126,7 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-// ✅ 座席ルール
+// ===== 座席ルール（完全）=====
 const seatRuleConfig = {
   weekIncrement: 35,
   anchors: [
@@ -139,8 +138,8 @@ const seatRuleConfig = {
   validUntil: "2026-08-03"
 };
 
-// ✅ 正しい番号計算
-function getSeatStartNumber(dateStr){
+// ===== 正しい番号計算 =====
+function getSeatStartNumber(dateStr) {
 
   const date = new Date(dateStr);
   date.setHours(0,0,0,0);
@@ -167,7 +166,7 @@ function getSeatStartNumber(dateStr){
   return base.start + weeks * seatRuleConfig.weekIncrement;
 }
 
-// ✅ 日付生成（UTC使わない）
+// ===== 日付生成 =====
 function generateDates() {
 
   const result = [];
@@ -181,6 +180,7 @@ function generateDates() {
   for (let d = new Date("2026-01-01"); d <= end; d.setDate(d.getDate()+1)) {
 
     d.setHours(0,0,0,0);
+
     if (d < today) continue;
 
     const day = d.getDay();
@@ -189,7 +189,6 @@ function generateDates() {
       const yyyy = d.getFullYear();
       const mm = String(d.getMonth()+1).padStart(2,"0");
       const dd = String(d.getDate()).padStart(2,"0");
-
       result.push(`${yyyy}-${mm}-${dd}`);
     }
   }
@@ -200,20 +199,21 @@ function generateDates() {
 const dates = generateDates();
 const SEAT_COUNT = 5;
 
-// ✅ 描画
-function render(data){
+// ===== 描画 =====
+function render(data) {
 
   const app = document.getElementById("app");
-  app.innerHTML="";
+  app.innerHTML = "";
 
-  dates.forEach(date=>{
+  dates.forEach(date => {
 
     const start = getSeatStartNumber(date);
-    if(start===null) return;
+    if (start === null) return;
 
     const d = new Date(date);
     const day = d.getDay();
 
+    // ✅ タイトル（赤復元）
     const title = document.createElement("div");
     title.className = "title";
 
@@ -226,78 +226,97 @@ function render(data){
     }
 
     title.textContent = `■ 読み手（${date} ${day === 0 ? "日" : "月"}）`;
-
     app.appendChild(title);
 
-    for(let i=0;i<SEAT_COUNT;i++){
+    // ✅ 残席（完全復元）
+    let used = 0;
+    for (let i = 0; i < SEAT_COUNT; i++) {
+      if (data?.[date]?.[start+i]) used++;
+    }
 
-      const seat = start+i;
+    const remain = SEAT_COUNT - used;
+
+    const remainDiv = document.createElement("div");
+
+    if (remain === 0) {
+      remainDiv.innerHTML = `<b style="color:#3399ff;">🔵 満席</b>`;
+    } else {
+      remainDiv.innerHTML = `<b style="color:green;">🟢 空き：あと${remain}席</b>`;
+    }
+
+    app.appendChild(remainDiv);
+
+    // ✅ 各席
+    for (let i = 0; i < SEAT_COUNT; i++) {
+
+      const seat = start + i;
       const name = data?.[date]?.[seat] || "";
 
       const row = document.createElement("div");
-      row.className="row";
+      row.className = "row";
 
-      if(!name) row.classList.add("empty-row");
+      if (!name) row.classList.add("empty-row");
       else row.classList.add("filled-row");
 
+      if (remain === 0) row.classList.add("full-row");
+
       const num = document.createElement("div");
-      num.className="num";
+      num.className = "num";
       num.textContent = seat;
 
-      // ✅ 音声（完全版）
-      const btn=document.createElement("button");
-      btn.className="icon-btn audio-btn";
-      btn.textContent="🔊";
+      // ✅ 音声（完全制御）
+      const btn = document.createElement("button");
+      btn.className = "icon-btn audio-btn";
+      btn.textContent = "🔊";
 
-      btn.onclick=()=>{
+      btn.onclick = () => {
 
-        const id=formatSeat(seat);
+        const id = formatSeat(seat);
 
-        // 同じ → 停止
-        if(currentBtn===btn){
+        if (currentBtn === btn) {
           currentAudio.pause();
           currentAudio.src="";
-          btn.textContent="🔊";
-          if(currentRow) currentRow.classList.remove("playing");
-          currentAudio=null;
-          currentBtn=null;
-          currentRow=null;
+
+          btn.textContent = "🔊";
+          if (currentRow) currentRow.classList.remove("playing");
+
+          currentAudio = null;
+          currentBtn = null;
+          currentRow = null;
           return;
         }
 
-        // 前停止
-        if(currentAudio){
+        if (currentAudio) {
           currentAudio.pause();
           currentAudio.src="";
         }
 
-        if(currentBtn) currentBtn.textContent="🔊";
-        if(currentRow) currentRow.classList.remove("playing");
+        if (currentBtn) currentBtn.textContent="🔊";
+        if (currentRow) currentRow.classList.remove("playing");
 
-        const audio=new Audio();
-
-        const list=[
+        const audio = new Audio();
+        const list = [
           `audio/${id}.m4a`,
           `audio/${id}.aac`
         ];
 
-        let i=0;
+        let i = 0;
 
-        const play=()=>{
-          if(i>=list.length){
-            alert("音声なし:"+id);
+        const play = () => {
+          if (i >= list.length) {
+            alert("音声なし:" + id);
             return;
           }
-          audio.src=list[i];
+          audio.src = list[i];
           audio.play().catch(()=>{
             i++;
             play();
           });
         };
 
-        audio.onended=()=>{
+        audio.onended = () => {
           btn.textContent="🔊";
-          if(currentRow) currentRow.classList.remove("playing");
+          if (currentRow) currentRow.classList.remove("playing");
           currentAudio=null;
           currentBtn=null;
           currentRow=null;
@@ -313,26 +332,25 @@ function render(data){
         currentRow=row;
       };
 
-      const label=document.createElement("div");
-      label.className="label";
-      label.innerHTML=name ? `<b>${name}</b>`
+      const label = document.createElement("div");
+      label.className = "label";
+
+      label.innerHTML = name
+        ? `<b>${name}</b>`
         : `<span class="empty-label">🟢 空き</span>`;
 
-      const edit=document.createElement("button");
-      edit.className="edit-btn";
-      edit.textContent=name?"編集":"予約";
+      const edit = document.createElement("button");
+      edit.className = "edit-btn";
+      edit.textContent = name ? "編集" : "予約";
 
-      edit.onclick=()=>{
-        const input=prompt("名前入力",name);
-        if(input===null) return;
+      edit.onclick = () => {
+        const input = prompt("名前入力", name);
+        if (input === null) return;
 
-        const ref=db.ref(`reservations/${date}/${seat}`);
+        const ref = db.ref(`reservations/${date}/${seat}`);
 
-        if(input.trim()===""){
-          ref.remove();
-        }else{
-          ref.set(input.trim());
-        }
+        if (input.trim() === "") ref.remove();
+        else ref.set(input.trim());
       };
 
       row.appendChild(num);
@@ -345,16 +363,19 @@ function render(data){
   });
 }
 
-// ✅ リアルタイム
+// ===== リアルタイム =====
 db.ref("reservations").on("value", snap=>{
   render(snap.val());
 });
 
-// ✅ CSV
+// ===== CSV =====
 function exportCSV(){
+
   db.ref("reservations").once("value", snap=>{
+
     let csv="日付,席番号,名前\n";
     const data=snap.val()||{};
+
     Object.entries(data).forEach(([d,v])=>{
       Object.entries(v).forEach(([s,n])=>{
         csv+=`${d},${s},${n}\n`;
