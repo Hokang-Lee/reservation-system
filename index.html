@@ -307,25 +307,88 @@ function render(data) {
       audioBtn.textContent = "🔊";
       audioBtn.className = "icon-btn audio-btn";
 
-      audioBtn.onclick = () => {
+audioBtn.onclick = () => {
 
-        if (currentAudio) {
-          currentAudio.pause();
-          currentAudio.currentTime = 0;
-        }
+  const id = formatSeatNumber(seat);
 
-        const id = formatSeatNumber(seat);
+  // 同じボタン → 停止
+  if (currentAudioBtn === audioBtn) {
+    if (currentAudio) {
+      currentAudio.pause();
+      currentAudio.currentTime = 0;
+      currentAudio.src = "";
+    }
 
-        let audio = new Audio(`audio/${id}.m4a`);
+    audioBtn.textContent = "🔊";
 
-        audio.onerror = () => {
-          audio = new Audio(`audio/${id}.aac`);
-          audio.play();
-        };
+    if (currentRow) currentRow.classList.remove("playing");
 
-        audio.play();
-        currentAudio = audio;
-      };
+    currentAudio = null;
+    currentAudioBtn = null;
+    currentRow = null;
+    return;
+  }
+
+  // 既存停止（完全排他）
+  if (currentAudio) {
+    currentAudio.pause();
+    currentAudio.currentTime = 0;
+    currentAudio.src = "";   // ←これが重要
+  }
+
+  if (currentAudioBtn) {
+    currentAudioBtn.textContent = "🔊";
+  }
+
+  if (currentRow) {
+    currentRow.classList.remove("playing");
+  }
+
+  const audio = new Audio();
+
+  const sources = [
+    `audio/${id}.m4a`,
+    `audio/${id}.aac`
+  ];
+
+  let index = 0;
+
+  const tryPlay = async () => {
+
+    if (index >= sources.length) {
+      alert(`音声なし: ${id}`);
+      return;
+    }
+
+    audio.src = sources[index];
+
+    try {
+      await audio.play();
+    } catch {
+      index++;
+      tryPlay();
+    }
+  };
+
+  audio.onended = () => {
+    audioBtn.textContent = "🔊";
+
+    if (currentRow) currentRow.classList.remove("playing");
+
+    currentAudio = null;
+    currentAudioBtn = null;
+    currentRow = null;
+  };
+
+  tryPlay();
+
+  currentAudio = audio;
+  currentAudioBtn = audioBtn;
+
+  audioBtn.textContent = "⏸";
+  row.classList.add("playing");
+  currentRow = row;
+};
 
       // 名前
       const label = document.createElement("div");
