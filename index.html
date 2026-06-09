@@ -12,7 +12,6 @@ body {
   font-size: 18px;
 }
 
-/* タイトル */
 .title {
   font-weight: bold;
   margin-top: 20px;
@@ -20,7 +19,6 @@ body {
   font-size: 22px;
 }
 
-/* 行 */
 .row {
   display: flex;
   align-items: center;
@@ -29,22 +27,25 @@ body {
   gap: 10px;
 }
 
-/* 空き */
+/* 状態 */
 .empty-row {
   background-color: #e8ffe8;
   border-left: 6px solid green;
 }
 
-/* 入力済み */
 .filled-row {
   background-color: #e0edff;
   border-left: 6px solid #2563eb;
 }
 
-/* 満席 */
 .full-row {
   background-color: #eaf3ff;
   border-left: 6px solid #3399ff;
+}
+
+/* ✅ 再生中 */
+.playing {
+  outline: 3px solid #60a5fa;
 }
 
 /* 番号 */
@@ -61,7 +62,6 @@ body {
   font-size: 20px;
 }
 
-/* 空き */
 .empty-label {
   color: green;
   font-weight: bold;
@@ -71,24 +71,20 @@ body {
 .icon-btn {
   width: 44px;
   height: 44px;
-
   display: flex;
   align-items: center;
   justify-content: center;
-
   font-size: 20px;
   border-radius: 6px;
   cursor: pointer;
   border: 2px solid #ccc;
 }
 
-/* 文書（今回は未使用でもOK） */
 .doc-btn {
   background: #f3e8ff;
   border-color: #c084fc;
 }
 
-/* 音声 */
 .audio-btn {
   background: #e0f2fe;
   border-color: #38bdf8;
@@ -98,40 +94,20 @@ body {
   background: #eee;
 }
 
-/* 編集ボタン（青統一） */
+/* ボタン */
 .edit-btn {
   padding: 10px 14px;
   font-size: 14px;
   border-radius: 6px;
   cursor: pointer;
-
   background-color: #dbeafe;
   border: 2px solid #3b82f6;
   color: #1d4ed8;
 }
-
-/* スマホ */
-@media (max-width: 600px) {
-
-  body { font-size: 20px; }
-
-  .row {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .label {
-    font-size: 22px;
-  }
-
-  button, .icon-btn {
-    width: 100%;
-    font-size: 18px;
-  }
-}
 </style>
 
 </head>
+
 <body>
 
 <h2>訓読チャレンジ予約システム</h2>
@@ -139,22 +115,22 @@ body {
 
 <div id="app"></div>
 
-<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 
 <script>
 
-// ✅ 音声制御
+// ✅ 音声管理（完全排他）
 let currentAudio = null;
+let currentAudioBtn = null;
+let currentRow = null;
 
-// ✅ 3桁変換
+// ✅ 3桁化
 function formatSeatNumber(seat) {
   return String(seat).padStart(3, "0");
 }
 
-
-// Firebase設定
+// ✅ Firebase設定
 const firebaseConfig = {
   apiKey: "AIzaSyDvjXQ5xX_jwcHcXnESjjJalCq2xqL2qIw",
   authDomain: "reservation-2026.firebaseapp.com",
@@ -165,8 +141,7 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-
-// ルール
+// ✅ 座席ルール
 const seatRuleConfig = {
   weekIncrement: 35,
   anchors: [
@@ -178,8 +153,7 @@ const seatRuleConfig = {
   validUntil: "2026-08-03"
 };
 
-
-// 開始番号
+// ✅ 開始番号
 function getSeatStartNumber(dateStr) {
   const date = new Date(dateStr);
   const dow = date.getDay();
@@ -192,34 +166,26 @@ function getSeatStartNumber(dateStr) {
   if (anchors.length === 0) return null;
 
   const base = anchors[0];
-  const weeks = Math.floor((date - base.d) / (7*24*60*60*1000));
+  const weeks = Math.floor((date - base.d)/(7*24*60*60*1000));
 
   return base.start + weeks * seatRuleConfig.weekIncrement;
 }
 
-
-// 日付生成
+// ✅ 日付生成
 function generateDates() {
   const result = [];
-
   const today = new Date();
   today.setHours(0,0,0,0);
 
   const end = new Date(seatRuleConfig.validUntil);
-  end.setHours(23,59,59,999);
 
-  for (let d = new Date("2026-01-01"); d <= end; d.setDate(d.getDate()+1)) {
-
+  for (let d=new Date("2026-01-01"); d<=end; d.setDate(d.getDate()+1)) {
     d.setHours(0,0,0,0);
     if (d < today) continue;
 
     const day = d.getDay();
     if (day === 0 || day === 1) {
-      const yyyy = d.getFullYear();
-      const mm = String(d.getMonth()+1).padStart(2,"0");
-      const dd = String(d.getDate()).padStart(2,"0");
-
-      result.push(`${yyyy}-${mm}-${dd}`);
+      result.push(d.toISOString().slice(0,10));
     }
   }
 
@@ -230,7 +196,7 @@ const dates = generateDates();
 const SEAT_COUNT = 5;
 
 
-// 描画
+// ✅ 描画
 function render(data) {
 
   const app = document.getElementById("app");
@@ -246,42 +212,30 @@ function render(data) {
     const dayText = (day === 0) ? "日" : "月";
 
     const title = document.createElement("div");
-
-    if (day === 0) {
-      title.style.color = "red";
-      title.style.background = "#ffeaea";
-    } else {
-      title.style.color = "black";
-      title.style.background = "#f0f0f0";
-    }
-
     title.className = "title";
+    title.style.background = (day === 0) ? "#ffeaea" : "#f0f0f0";
+    title.style.color = (day === 0) ? "red" : "black";
     title.textContent = `■ 読み手（${date} ${dayText}）`;
     app.appendChild(title);
 
-    // 残数
     let used = 0;
-    for (let i = 0; i < SEAT_COUNT; i++) {
-      const seat = start + i;
-      if (data?.[date]?.[seat]) used++;
+    for (let i=0;i<SEAT_COUNT;i++) {
+      if (data?.[date]?.[start+i]) used++;
     }
 
     const remain = SEAT_COUNT - used;
 
     const remainDiv = document.createElement("div");
-
-    if (remain === 0) {
-      remainDiv.innerHTML = `<b style="color:#3399ff;">🔵 満席</b>`;
-    } else {
-      remainDiv.innerHTML = `<b style="color:green;">🟢 空き：あと${remain}席</b>`;
-    }
-
+    remainDiv.innerHTML =
+      (remain===0)
+      ? `<b style="color:#3399ff;">🔵 満席</b>`
+      : `<b style="color:green;">🟢 空き：あと${remain}席</b>`;
     app.appendChild(remainDiv);
 
 
-    for (let i=0; i<SEAT_COUNT; i++) {
+    for (let i=0;i<SEAT_COUNT;i++) {
 
-      const seat = start + i;
+      const seat = start+i;
       const name = data?.[date]?.[seat] || "";
 
       const row = document.createElement("div");
@@ -289,121 +243,103 @@ function render(data) {
 
       if (!name) row.classList.add("empty-row");
       else row.classList.add("filled-row");
-
       if (remain === 0) row.classList.add("full-row");
 
-      // 番号
       const num = document.createElement("div");
       num.className = "num";
       num.textContent = seat;
 
-      // 文書（まだ未使用OK）
       const docBtn = document.createElement("button");
       docBtn.textContent = "📄";
       docBtn.className = "icon-btn doc-btn";
 
-      // ✅ 音声（3桁 + m4a→aac）
+      // ✅ 🎧 音声（完全修正版）
       const audioBtn = document.createElement("button");
       audioBtn.textContent = "🔊";
       audioBtn.className = "icon-btn audio-btn";
 
-audioBtn.onclick = () => {
+      audioBtn.onclick = () => {
 
-  const id = formatSeatNumber(seat);
+        const id = formatSeatNumber(seat);
 
-  // 同じボタン → 停止
-  if (currentAudioBtn === audioBtn) {
-    if (currentAudio) {
-      currentAudio.pause();
-      currentAudio.currentTime = 0;
-      currentAudio.src = "";
-    }
+        // 同じボタン → 停止
+        if (currentAudioBtn === audioBtn) {
+          currentAudio.pause();
+          currentAudio.currentTime = 0;
+          currentAudio.src = "";
 
-    audioBtn.textContent = "🔊";
+          audioBtn.textContent = "🔊";
+          if (currentRow) currentRow.classList.remove("playing");
 
-    if (currentRow) currentRow.classList.remove("playing");
+          currentAudio = null;
+          currentAudioBtn = null;
+          currentRow = null;
+          return;
+        }
 
-    currentAudio = null;
-    currentAudioBtn = null;
-    currentRow = null;
-    return;
-  }
+        // 完全停止
+        if (currentAudio) {
+          currentAudio.pause();
+          currentAudio.currentTime = 0;
+          currentAudio.src = "";
+        }
 
-  // 既存停止（完全排他）
-  if (currentAudio) {
-    currentAudio.pause();
-    currentAudio.currentTime = 0;
-    currentAudio.src = "";   // ←これが重要
-  }
+        if (currentAudioBtn) currentAudioBtn.textContent = "🔊";
+        if (currentRow) currentRow.classList.remove("playing");
 
-  if (currentAudioBtn) {
-    currentAudioBtn.textContent = "🔊";
-  }
+        const audio = new Audio();
 
-  if (currentRow) {
-    currentRow.classList.remove("playing");
-  }
+        const sources = [
+          `audio/${id}.m4a`,
+          `audio/${id}.aac`
+        ];
 
-  const audio = new Audio();
+        let index = 0;
 
-  const sources = [
-    `audio/${id}.m4a`,
-    `audio/${id}.aac`
-  ];
+        const tryPlay = async () => {
 
-  let index = 0;
+          if (index >= sources.length) {
+            alert(`音声なし: ${id}`);
+            return;
+          }
 
-  const tryPlay = async () => {
+          audio.src = sources[index];
 
-    if (index >= sources.length) {
-      alert(`音声なし: ${id}`);
-      return;
-    }
+          try {
+            await audio.play();
+          } catch {
+            index++;
+            tryPlay();
+          }
+        };
 
-    audio.src = sources[index];
+        audio.onended = () => {
+          audioBtn.textContent = "🔊";
+          if (currentRow) currentRow.classList.remove("playing");
 
-    try {
-      await audio.play();
-    } catch {
-      index++;
-      tryPlay();
-    }
-  };
+          currentAudio = null;
+          currentAudioBtn = null;
+          currentRow = null;
+        };
 
-  audio.onended = () => {
-    audioBtn.textContent = "🔊";
+        tryPlay();
 
-    if (currentRow) currentRow.classList.remove("playing");
+        currentAudio = audio;
+        currentAudioBtn = audioBtn;
 
-    currentAudio = null;
-    currentAudioBtn = null;
-    currentRow = null;
-  };
+        audioBtn.textContent = "⏸";
+        row.classList.add("playing");
+        currentRow = row;
+      };
 
-  tryPlay();
-
-  currentAudio = audio;
-  currentAudioBtn = audioBtn;
-
-  audioBtn.textContent = "⏸";
-  row.classList.add("playing");
-  currentRow = row;
-};
-
-      // 名前
       const label = document.createElement("div");
       label.className = "label";
+      label.innerHTML = name
+        ? `<b>${name}</b>`
+        : `<span class="empty-label">🟢 空き</span>`;
 
-      if (!name) {
-        label.innerHTML = `<span class="empty-label">🟢 空き</span>`;
-      } else {
-        label.innerHTML = `<b>${name}</b>`;
-      }
-
-      // ボタン
       const editBtn = document.createElement("button");
       editBtn.className = "edit-btn";
-
       editBtn.textContent = (!name) ? "予約" : "編集";
 
       editBtn.onclick = () => {
@@ -432,21 +368,20 @@ audioBtn.onclick = () => {
 }
 
 
-// リアルタイム
+// ✅ リアルタイム
 db.ref("reservations").on("value", snap => {
   render(snap.val());
 });
 
-
-// CSV
+// ✅ CSV
 function exportCSV() {
   db.ref("reservations").once("value", snap => {
 
     let csv = "日付,席番号,名前\n";
-    const data = snap.val() || {};
 
-    Object.entries(data).forEach(([date, seats]) => {
-      Object.entries(seats).forEach(([seat, name]) => {
+    const data = snap.val() || {};
+    Object.entries(data).forEach(([date,seats])=>{
+      Object.entries(seats).forEach(([seat,name])=>{
         csv += `${date},${seat},${name}\n`;
       });
     });
