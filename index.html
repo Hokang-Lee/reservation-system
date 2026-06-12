@@ -2,19 +2,25 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>予約システム（最終完全版）</title>
+<title>予約システム（完全最終版）</title>
 
 <style>
 body { font-family: sans-serif; margin: 0; display: flex; height: 100vh; }
+
 #app { width: 50%; overflow-y: auto; padding: 20px; }
 #viewer { width: 50%; background: #222; }
+
 #pdfViewer {
   width: 100%;
   height: 100%;
   border: none;
 }
 
-.title { font-weight: bold; padding: 10px; margin-top: 20px; }
+.title {
+  font-weight: bold;
+  padding: 10px;
+  margin-top: 20px;
+}
 
 .row {
   display: flex;
@@ -26,16 +32,19 @@ body { font-family: sans-serif; margin: 0; display: flex; height: 100vh; }
 
 .empty-row { background: #e8ffe8; border-left: 6px solid green; }
 .filled-row { background: #e0edff; border-left: 6px solid #2563eb; }
-.full-row { background: #eaf3ff; border-left: 6px solid #3399ff; }
 
 .playing {
   background: #fff7ed !important;
   outline: 3px solid #f59e0b;
 }
 
-.num { width: 60px; }
-.icon-btn { width: 40px; }
 .label { flex: 1; }
+
+@media (max-width: 768px) {
+  body { flex-direction: column; }
+  #app { width: 100%; height: 50vh; }
+  #viewer { width: 100%; height: 50vh; }
+}
 </style>
 </head>
 
@@ -47,23 +56,19 @@ body { font-family: sans-serif; margin: 0; display: flex; height: 100vh; }
   <iframe id="pdfViewer"></iframe>
 </div>
 
-<!-- ✅ Firebase -->
+<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 
 <script>
 
 // ===== Firebase =====
-const firebaseConfig = {
-  apiKey: "AIzaSyDvjXQ5xX_jwcHcXnESjjJalCq2xqL2qIw",
-  authDomain: "reservation-2026.firebaseapp.com",
-  databaseURL: "https://reservation-2026-default-rtdb.firebaseio.com/",
-  projectId: "reservation-2026"
-};
-
-if (!firebase.apps.length) {
-  firebase.initializeApp(firebaseConfig);
-}
+firebase.initializeApp({
+  apiKey:"AIzaSyDvjXQ5xX_jwcHcXnESjjJalCq2xqL2qIw",
+  authDomain:"reservation-2026.firebaseapp.com",
+  databaseURL:"https://reservation-2026-default-rtdb.firebaseio.com/",
+  projectId:"reservation-2026"
+});
 
 const db = firebase.database();
 
@@ -84,12 +89,22 @@ function stopAudio(){
   }
 }
 
-// ===== 3桁 =====
+// ✅ ✅ ✅ ★今回の重要追加（完全対策）
+window.addEventListener("beforeunload", stopAudio);
+window.addEventListener("pagehide", stopAudio);
+
+document.addEventListener("visibilitychange", () => {
+  if(document.visibilityState === "hidden"){
+    stopAudio();
+  }
+});
+
+// ===== 共通 =====
 function formatSeat(seat){
   return String(seat).padStart(3,"0");
 }
 
-// ===== 座席ルール =====
+// ===== 座席ロジック =====
 const config = {
   weekIncrement: 35,
   anchors: [
@@ -101,34 +116,30 @@ const config = {
   validUntil: "2026-08-03"
 };
 
-// ===== 開始番号 =====
 function getStart(dateStr){
-
   const date = new Date(dateStr);
   date.setHours(0,0,0,0);
-
   const dow = date.getDay();
 
   const list = config.anchors
-    .map(a=>{
-      const d=new Date(a.date);
+    .map(a => {
+      const d = new Date(a.date);
       d.setHours(0,0,0,0);
       return {...a,d};
     })
-    .filter(a=>a.dow===dow && a.d<=date)
+    .filter(a => a.dow === dow && a.d <= date)
     .sort((a,b)=>b.d-a.d);
 
-  if(list.length===0) return null;
+  if(list.length === 0) return null;
 
   const base = list[0];
   const weeks = Math.floor((date-base.d)/(7*24*60*60*1000));
 
-  return base.start + weeks*config.weekIncrement;
+  return base.start + weeks * config.weekIncrement;
 }
 
-// ===== ✅ 正しい日付生成（完全版） =====
+// ===== 日付 =====
 function generateDates(){
-
   const result = [];
   const today = new Date();
   today.setHours(0,0,0,0);
@@ -138,17 +149,14 @@ function generateDates(){
   for(let d=new Date("2026-01-01"); d<=end; d.setDate(d.getDate()+1)){
 
     d.setHours(0,0,0,0);
-
     if(d < today) continue;
 
     const day = d.getDay();
 
     if(day === 0 || day === 1){
-
       const y=d.getFullYear();
       const m=String(d.getMonth()+1).padStart(2,"0");
       const da=String(d.getDate()).padStart(2,"0");
-
       result.push(`${y}-${m}-${da}`);
     }
   }
@@ -165,15 +173,13 @@ function render(data){
   const app=document.getElementById("app");
   app.innerHTML="";
 
-  dates.forEach(date=>{
+  dates.forEach(date => {
 
     const start=getStart(date);
     if(start===null) return;
 
-    const d=new Date(date);
-    const day=d.getDay();
+    const day = new Date(date).getDay();
 
-    // タイトル
     const title=document.createElement("div");
     title.className="title";
     title.textContent=`■ 読み手（${date} ${day===0?"日":"月"}）`;
@@ -190,28 +196,29 @@ function render(data){
     // 残席
     let used=0;
     for(let i=0;i<SEAT;i++){
-      if(data?.[date]?.[start+i]) used++;
+      const seat = start+i;
+      if(data && data[date] && data[date][seat]) used++;
     }
 
-    const remain=SEAT-used;
+    const remain = SEAT-used;
 
     const remainDiv=document.createElement("div");
     remainDiv.innerHTML =
       remain===0
       ? `<b style="color:#3399ff;">🔵 満席</b>`
       : `<b style="color:green;">🟢 空き：あと${remain}席</b>`;
+
     app.appendChild(remainDiv);
 
-    // 席
+    // 行
     for(let i=0;i<SEAT;i++){
 
-      const seat=start+i;
-      const name=data?.[date]?.[seat]||"";
+      const seat = start+i;
+      const name = (data && data[date] && data[date][seat]) || "";
 
       const row=document.createElement("div");
       row.className="row";
-      row.classList.add(name?"filled-row":"empty-row");
-      if(remain===0) row.classList.add("full-row");
+      row.classList.add(name ? "filled-row":"empty-row");
 
       const num=document.createElement("div");
       num.textContent=seat;
@@ -225,7 +232,11 @@ function render(data){
 
         if(isPlaying) return;
 
-        // ✅ 同じ（トグル）
+        // PDF
+        document.getElementById("pdfViewer").src =
+          `docs/${id}.pdf#zoom=page-width`;
+
+        // トグル
         if(currentDocId === id){
 
           if(!viewerAudio.paused){
@@ -239,24 +250,19 @@ function render(data){
           }
         }
 
-        currentDocId=id;
-
-        // ✅ PDF更新は1回のみ
-        document.getElementById("pdfViewer").src =
-          `docs/${id}.pdf#zoom=page-width`;
+        currentDocId = id;
 
         stopAudio();
+        isPlaying = true;
 
-        isPlaying=true;
-
-        const sources=[
+        const sources = [
           `audio/${id}.m4a`,
           `audio/${id}.aac`
         ];
 
         for(let src of sources){
           try{
-            viewerAudio.src=src;
+            viewerAudio.src = src;
             await viewerAudio.play();
 
             if(currentRow) currentRow.classList.remove("playing");
@@ -268,19 +274,18 @@ function render(data){
           }catch(e){}
         }
 
-        console.log("音声なし:",id);
         isPlaying=false;
       };
 
       const label=document.createElement("div");
       label.className="label";
-      label.innerHTML=name?`<b>${name}</b>`:"空き";
+      label.innerHTML = name ? `<b>${name}</b>` : "空き";
 
       const edit=document.createElement("button");
-      edit.textContent=name?"編集":"予約";
+      edit.textContent = name ? "編集":"予約";
 
-      edit.onclick=()=>{
-        const input=prompt("名前入力",name);
+      edit.onclick = ()=>{
+        const input = prompt("名前入力",name);
         if(input===null) return;
 
         const ref=db.ref(`reservations/${date}/${seat}`);
@@ -297,12 +302,11 @@ function render(data){
   });
 }
 
-// ===== Firebase =====
+// 起動
 db.ref("reservations").on("value",snap=>{
   render(snap.val());
 });
 
 </script>
-
 </body>
 </html>
