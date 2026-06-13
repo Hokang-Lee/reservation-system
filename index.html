@@ -223,18 +223,15 @@ function stopAudio(){
   if(viewerAudio){
     viewerAudio.pause();
     viewerAudio.currentTime = 0;
-
-    // ❌ src消すのをやめる
-    // viewerAudio.src = "";
-    // viewerAudio.load();
-
     viewerAudio = null;
   }
 
+  // ✅ btn消さない（ここ重要）
   if(currentBtn){
     currentBtn.textContent = "▶";
-    currentBtn = null;
   }
+
+  currentBtn = null;
 
   if(currentRow){
     currentRow.classList.remove("playing");
@@ -245,7 +242,7 @@ function stopAudio(){
 }
 
 // ===== 音声 =====
-async function loadAndPlayAudio(id, row){
+async function loadAndPlayAudio(id, row, btn){
 
   const formats = ["m4a","aac"];
 
@@ -255,7 +252,6 @@ async function loadAndPlayAudio(id, row){
 
     try{
 
-      // ✅ Audioは1回だけ生成
       const audio = new Audio(url);
 
       await new Promise((resolve, reject)=>{
@@ -263,25 +259,23 @@ async function loadAndPlayAudio(id, row){
         audio.onerror = reject;
       });
 
-      // ✅ 成功時だけ代入
       viewerAudio = audio;
 
-      // ✅ currentBtnが既に外でセットされている前提
+      // ✅ ★ここ変える（currentBtn使わない）
       audio.onplay = ()=>{
-        if(currentBtn) currentBtn.textContent = "⏸";
+        btn.textContent = "⏸";
       };
 
       audio.onpause = ()=>{
-        if(currentBtn) currentBtn.textContent = "▶";
+        btn.textContent = "▶";
       };
 
       audio.onended = stopAudio;
 
       await audio.play();
 
-      requestAnimationFrame(()=>{
-        if(currentBtn) currentBtn.textContent = "⏸";
-      });
+      // ✅ 念押し（Android対策）
+      btn.textContent = "⏸";
 
       if(currentRow) currentRow.classList.remove("playing");
       row.classList.add("playing");
@@ -416,7 +410,6 @@ function render(data){
 
       btn.onclick = async ()=>{
 
-        // ✅ トグル成立条件
         if(currentDocId === id && viewerAudio && !viewerAudio.paused){
           stopAudio();
           return;
@@ -424,20 +417,17 @@ function render(data){
 
         stopAudio();
 
-        currentBtn = btn;   // ✅ ここ重要（入れてないとUIズレる）
+        currentBtn = btn; // UIリセット用だけに使う
 
-        // ✅ 先にPDF表示（重要）
         document.getElementById("pdfViewer").src = `docs/${id}.pdf`;
 
         try{
-          await loadAndPlayAudio(id, row);
+          await loadAndPlayAudio(id, row, btn);
           currentDocId = id;
         }catch{
-          // ✅ 音声が無くても無視（ここポイント）
-          console.log("音声なしでも続行");
+          stopAudio();
         }
       };
-
 
       top.appendChild(num);
       top.appendChild(btn);
