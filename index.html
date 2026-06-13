@@ -16,7 +16,6 @@ body{
   background:#f5f7fb;
 }
 
-/* 左サイド */
 h1{
   width:200px;
   margin:0;
@@ -29,14 +28,12 @@ h1{
   line-height:1.4;
 }
 
-/* メイン */
 #app{
   flex:1;
   overflow-y:auto;
   padding:24px;
 }
 
-/* タイトルカード */
 .title{
   font-weight:bold;
   padding:12px 16px;
@@ -46,12 +43,8 @@ h1{
   box-shadow:0 2px 6px rgba(0,0,0,0.08);
 }
 
-/* 残席 */
-.remain{
-  margin:6px 0 10px;
-}
+.remain{ margin:6px 0 10px; }
 
-/* 行カード */
 .row{
   display:flex;
   align-items:center;
@@ -61,80 +54,42 @@ h1{
   margin-bottom:8px;
   background:white;
   box-shadow:0 1px 4px rgba(0,0,0,0.06);
-  transition:.2s;
 }
 
-.row:hover{
-  transform:translateY(-2px);
-}
+.row:hover{ transform:translateY(-2px); }
 
-/* ✅ row-top */
 .row-top{
   display:flex;
-  align-items:center;
   gap:8px;
   width:110px;
 }
 
-.row-top .seat{
-  width:55px;
-  font-weight:bold;
-}
+.seat{ width:55px; font-weight:bold; }
+.play{ width:45px; }
 
-.row-top .play{
-  width:45px;
-  text-align:center;
-}
+.label{ flex:1; }
+.edit{ width:70px; }
 
-/* ✅ label / edit */
-.label{
-  flex:1;
-  font-size:15px;
-}
-
-.edit{
-  width:70px;
-  text-align:center;
-}
-
-/* 状態 */
 .empty-row{ border-left:6px solid #22c55e; }
 .filled-row{ border-left:6px solid #2563eb; }
+.playing{ outline:3px solid #f59e0b; }
 
-.playing{
-  outline:3px solid #f59e0b;
-  background:#fff7ed;
-}
-
-/* ボタン */
 button{
   border:none;
   background:#e5e7eb;
   padding:6px 10px;
   border-radius:8px;
-  cursor:pointer;
-  transition:.2s;
-}
-button:hover{
-  background:#d1d5db;
 }
 
-/* PDF */
 #viewer{
   width:40%;
   height:100%;
-  min-height:0;
   background:#111;
   position:relative;
 }
 
-#pdfViewer{
-  width:100%;
-  height:100%;
-  border:none;
-}
+#pdfViewer{ width:100%; height:100%; }
 
-/* 閉じる */
 #closePdf{
   position:absolute;
   top:10px;
@@ -143,15 +98,12 @@ button:hover{
   color:white;
 }
 
-/* ✅ モバイル完全対応 */
-@media (max-width:768px){
+/* スマホ */
+@media(max-width:768px){
 
   #viewer{ display:none; }
 
-  h1{
-    width:110px;
-    font-size:14px;
-  }
+  h1{ width:110px; font-size:14px; }
 
   .row{
     flex-direction:column;
@@ -159,35 +111,19 @@ button:hover{
     gap:6px;
   }
 
-  /* 上段 */
-  .row-top{
-    width:auto;
-  }
+  .row-top{ width:auto; }
 
-  /* 名前 */
-  .label{
-    width:100%;
-    font-size:16px;
-    font-weight:500;
-    word-break: break-word;
-  }
-
-  /* 編集 */
   .edit{
-    width:auto;
     align-self:flex-end;
+    width:auto;
   }
-
 }
 </style>
 </head>
 
 <body>
 
-<h1>
-予習機能付き<br>
-訓読予約
-</h1>
+<h1>予習機能付き<br>訓読予約</h1>
 
 <div id="app"></div>
 
@@ -196,52 +132,75 @@ button:hover{
   <iframe id="pdfViewer"></iframe>
 </div>
 
-<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 
 <script>
-// ===== Firebase =====
 firebase.initializeApp({
   apiKey:"AIzaSyDvjXQ5xX_jwcHcXnESjjJalCq2xqL2qIw",
   authDomain:"reservation-2026.firebaseapp.com",
   databaseURL:"https://reservation-2026-default-rtdb.firebaseio.com/",
   projectId:"reservation-2026"
-})
+});
 const db = firebase.database();
 
-// ===== 状態 =====
 let viewerAudio=new Audio();
 let currentDocId=null;
 let currentRow=null;
 let currentBtn=null;
 let isAudioPlaying=false;
 
-// ===== 停止 =====
+// ✅ 完全停止
 function stopAudio(){
-  viewerAudioTime = 0;  viewerAudio.pause();
+  viewerAudio.pause();
+  viewerAudio.currentTime=0;
 
-  // ✅ ★これが決定打（超重要）
-  viewerAudio.src = "";
+  // ★これが最重要
+  viewerAudio.src="";
   viewerAudio.load();
 
-  isAudioPlaying = false;
+  isAudioPlaying=false;
 
   if(currentBtn){
-    currentBtn.textContent = "▶";
-    currentBtn = null;
+    currentBtn.textContent="▶";
+    currentBtn=null;
   }
 
-  currentDocId = null;
+  currentDocId=null;
 
   if(currentRow){
     currentRow.classList.remove("playing");
-    currentRow = null;
+    currentRow=null;
   }
 }
 
+// ✅ 再生監視
+viewerAudio.onplay=()=>{
+  isAudioPlaying=true;
+  if(currentBtn) currentBtn.textContent="⏸";
+};
 
-// ===== 音声 =====
+viewerAudio.onpause=()=>{
+  isAudioPlaying=false;
+  if(currentBtn) currentBtn.textContent="▶";
+};
+
+viewerAudio.onended=stopAudio;
+
+// ✅ 状態同期（ここが核心）
+document.addEventListener("visibilitychange",()=>{
+  if(document.visibilityState==="visible"){
+    if(!viewerAudio.paused){
+      isAudioPlaying=true;
+      if(currentBtn) currentBtn.textContent="⏸";
+    }
+  }
+});
+
+// 補助
+window.addEventListener("blur",()=>{});
+
+// ===== 音声
 async function loadAndPlayAudio(id,row){
   const formats=["m4a","aac"];
 
@@ -256,23 +215,19 @@ async function loadAndPlayAudio(id,row){
 
       viewerAudio.src=url;
       await viewerAudio.play();
-      isAudioPlaying=true;
 
       if(currentRow) currentRow.classList.remove("playing");
       row.classList.add("playing");
       currentRow=row;
-      return;
 
+      return;
     }catch{}
   }
-
   throw new Error("音声なし");
 }
 
-// ===== ユーティリティ =====
 function formatSeat(s){return String(s).padStart(3,"0");}
 
-// ===== 設定 =====
 const config={
   weekIncrement:35,
   anchors:[
@@ -289,13 +244,11 @@ function getStart(dateStr){
   date.setHours(0,0,0,0);
   const dow=date.getDay();
 
-  const list=config.anchors
-    .map(a=>{
-      const d=new Date(a.date);
-      d.setHours(0,0,0,0);
-      return {...a,d};
-    })
-    .filter(a=>a.dow===dow && a.d<=date)
+  const list=config.anchors.map(a=>{
+    const d=new Date(a.date);
+    d.setHours(0,0,0,0);
+    return {...a,d};
+  }).filter(a=>a.dow===dow && a.d<=date)
     .sort((a,b)=>b.d-a.d);
 
   if(!list.length) return null;
@@ -316,10 +269,7 @@ function generateDates(){
     if(d<today) continue;
     const day=d.getDay();
     if(day===0||day===1){
-      const y=d.getFullYear();
-      const m=String(d.getMonth()+1).padStart(2,"0");
-      const da=String(d.getDate()).padStart(2,"0");
-      result.push(`${y}-${m}-${da}`);
+      result.push(d.toISOString().slice(0,10));
     }
   }
   return result;
@@ -328,7 +278,6 @@ function generateDates(){
 const dates=generateDates();
 const SEAT=5;
 
-// ===== 描画 =====
 function render(data){
   const app=document.getElementById("app");
   app.innerHTML="";
@@ -347,24 +296,9 @@ function render(data){
     if(day===0){
       title.style.color="red";
       title.style.background="#ffeaea";
-    }else{
-      title.style.background="#f0f0f0";
     }
+
     app.appendChild(title);
-
-    let used=0;
-    for(let i=0;i<SEAT;i++){
-      if(data?.[date]?.[start+i]) used++;
-    }
-
-    const remain=SEAT-used;
-    const remainDiv=document.createElement("div");
-    remainDiv.className="remain";
-    remainDiv.innerHTML=
-      remain===0
-      ? "<b style='color:#3399ff;'>🔵 満席</b>"
-      : `<b style='color:green;'>🟢 空き：あと${remain}席</b>`;
-    app.appendChild(remainDiv);
 
     for(let i=0;i<SEAT;i++){
       const seat=start+i;
@@ -375,7 +309,6 @@ function render(data){
       row.className="row";
       row.classList.add(name?"filled-row":"empty-row");
 
-      // ✅ row-top
       const top=document.createElement("div");
       top.className="row-top";
 
@@ -399,8 +332,7 @@ function render(data){
         currentBtn=btn;
         btn.textContent="⏸";
 
-        document.getElementById("pdfViewer").src=
-          `docs/${id}.pdf#zoom=page-width`;
+        document.getElementById("pdfViewer").src=`docs/${id}.pdf#zoom=page-width`;
 
         try{ await loadAndPlayAudio(id,row); }
         catch{ stopAudio(); }
@@ -411,17 +343,11 @@ function render(data){
 
       const label=document.createElement("div");
       label.className="label";
-      label.innerHTML=name?`<b>${name}</b>`:"空き";
+      label.innerHTML=name||"空き";
 
       const edit=document.createElement("button");
       edit.className="edit";
       edit.textContent=name?"編集":"予約";
-      edit.onclick=()=>{
-        const input=prompt("名前入力",name);
-        if(input===null) return;
-        const ref=db.ref(`reservations/${date}/${seat}`);
-        input.trim()===""?ref.remove():ref.set(input.trim());
-      };
 
       row.appendChild(top);
       row.appendChild(label);
@@ -432,45 +358,14 @@ function render(data){
   });
 }
 
-// ===== 閉じる =====
 document.getElementById("closePdf").onclick=()=>{
   document.getElementById("pdfViewer").src="";
   stopAudio();
 };
-// ✅ PC系
-window.addEventListener("beforeunload", stopAudio);
-window.addEventListener("pagehide", stopAudio);
 
-// ✅ スマホ最重要
-document.addEventListener("visibilitychange", () => {
-  if (document.visibilityState === "hidden") {
-    stopAudio();
-  }
-});
-
-// ✅ 補助（タブ切替対策）
-window.addEventListener("blur", stopAudio);
-
-// ✅ 再生終了でも統一
-viewerAudio.onended = stopAudio;
-
-// ===== 起動 =====
 db.ref("reservations").on("value",snap=>{
   render(snap.val());
 });
-// PC系
-window.addEventListener("beforeunload", stopAudio);
-window.addEventListener("pagehide", stopAudio);
-
-// モバイル系（最重要）
-document.addEventListener("visibilitychange", ()=> {
-  if (document.visibilityState === "hidden") {
-    stopAudio();
-  }
-});
-
-// 操作離脱（スマホ補助）
-window.addEventListener("blur", stopAudio);
 </script>
 
 </body>
