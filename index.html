@@ -108,10 +108,15 @@ button:hover {
   position:relative;
 }
 
-/* PDF */
+html, body {
+  height: 100%;
+}
+
+
 #viewer {
   width: 40%;
-  height: 100%;  /* ✅ 追加（重要） */
+  height: 100%;     /* ✅ これ必須 */
+  min-height: 0;    /* ✅ flex対策 */
   background: #111;
   position: relative;
 }
@@ -119,8 +124,9 @@ button:hover {
 #pdfViewer {
   width: 100%;
   height: 100%;
-  border: none;
+  display: block;
 }
+
 
 /* スマホ */
 @media (max-width:768px){
@@ -164,6 +170,7 @@ const db = firebase.database();
 let viewerAudio = new Audio();
 let currentDocId = null;
 let currentRow = null;
+let currentBtn = null;
 
 // ===== 音声停止（強化版）=====
 function stopAudio() {
@@ -172,7 +179,14 @@ function stopAudio() {
   viewerAudio.src = "";
   viewerAudio.load();
 
-  if(currentRow){
+  if (currentBtn) {
+    currentBtn.textContent = "▶";  // ✅ 戻す
+    currentBtn = null;
+  }
+
+  currentDocId = null;
+
+  if (currentRow) {
     currentRow.classList.remove("playing");
     currentRow = null;
   }
@@ -190,7 +204,7 @@ document.addEventListener("visibilitychange",()=>{
 });
 
 // ===== 音声ロード（m4a/aac混在対応）=====
-async function loadAndPlayAudio(id, row) {
+async function loadAndPlayAudio(id, row, btn) {
   const formats = ["m4a", "aac"];
   let found = false;
 
@@ -211,9 +225,13 @@ async function loadAndPlayAudio(id, row) {
         };
       });
 
+
       // ✅ 再生
       viewerAudio.src = url;
       await viewerAudio.play();
+
+      // ボタン更新
+      btn.textContent = "⏸";
 
       if (currentRow) currentRow.classList.remove("playing");
       row.classList.add("playing");
@@ -343,21 +361,27 @@ function render(data){
       num.textContent=seat;
 
       const btn=document.createElement("button");
-      btn.textContent="📄";
+      btn.textContent = "▶";
+
 
       btn.onclick = async () => {
         const id = formatSeat(seat);
 
-        // ✅ PDFを開く前に音声停止
+        // ✅ トグル停止
+        if (currentDocId === id && !viewerAudio.paused) {
+          stopAudio();
+          return;
+        }
+
         stopAudio();
 
-       document.getElementById("pdfViewer").src =
-         `docs/${id}.pdf#zoom=page-width`;
-
+        document.getElementById("pdfViewer").src =
+          `docs/${id}.pdf#zoom=page-width`;
 
         try {
           currentDocId = id;
-          await loadAndPlayAudio(id, row);
+          currentBtn = btn;               // ✅ 追加
+          await loadAndPlayAudio(id, row, btn);
         } catch (e) {
           console.warn("音声エラー:", e);
         }
