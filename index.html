@@ -435,11 +435,40 @@ document.getElementById("closePdf").onclick=()=>{
   document.getElementById("pdfViewer").src="";
   stopAudio();
 };
+// ✅ PC系
+window.addEventListener("beforeunload", stopAudio);
+window.addEventListener("pagehide", stopAudio);
+
+// ✅ スマホ最重要
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "hidden") {
+    stopAudio();
+  }
+});
+
+// ✅ 補助（タブ切替対策）
+window.addEventListener("blur", stopAudio);
+
+// ✅ 再生終了でも統一
+viewerAudio.onended = stopAudio;
 
 // ===== 起動 =====
 db.ref("reservations").on("value",snap=>{
   render(snap.val());
 });
+// PC系
+window.addEventListener("beforeunload", stopAudio);
+window.addEventListener("pagehide", stopAudio);
+
+// モバイル系（最重要）
+document.addEventListener("visibilitychange", ()=> {
+  if (document.visibilityState === "hidden") {
+    stopAudio();
+  }
+});
+
+// 操作離脱（スマホ補助）
+window.addEventListener("blur", stopAudio);
 </script>
 
 </body>
