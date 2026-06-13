@@ -222,8 +222,12 @@ function stopAudio(){
 
   if(viewerAudio){
     viewerAudio.pause();
-    viewerAudio.src = "";
-    viewerAudio.load();
+    viewerAudio.currentTime = 0;
+
+    // ❌ src消すのをやめる
+    // viewerAudio.src = "";
+    // viewerAudio.load();
+
     viewerAudio = null;
   }
 
@@ -274,6 +278,9 @@ async function loadAndPlayAudio(id, row){
       audio.onended = stopAudio;
 
       await audio.play();
+
+      // ✅ ここ追加
+      if(currentBtn) currentBtn.textContent = "⏸";
 
       if(currentRow) currentRow.classList.remove("playing");
       row.classList.add("playing");
