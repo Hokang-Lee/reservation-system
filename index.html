@@ -219,25 +219,27 @@ let isAudioPlaying=false;
 
 // ===== 停止 =====
 function stopAudio(){
-  viewerAudio.pause();
-  viewerAudio.currentTime=0;
-  viewerAudio.src="";
+  viewerAudioTime = 0;  viewerAudio.pause();
+
+  // ✅ ★これが決定打（超重要）
+  viewerAudio.src = "";
   viewerAudio.load();
 
-  isAudioPlaying=false;
+  isAudioPlaying = false;
 
   if(currentBtn){
-    currentBtn.textContent="▶";
-    currentBtn=null;
+    currentBtn.textContent = "▶";
+    currentBtn = null;
   }
 
-  currentDocId=null;
+  currentDocId = null;
 
   if(currentRow){
     currentRow.classList.remove("playing");
-    currentRow=null;
+    currentRow = null;
   }
 }
+
 
 // ===== 音声 =====
 async function loadAndPlayAudio(id,row){
