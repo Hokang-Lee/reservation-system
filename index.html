@@ -143,33 +143,34 @@ button:hover{
     font-size:14px;
   }
 
-  /* ✅ 縦レイアウト */
+  /* ✅ ここが重要 */
+
   .row{
-    flex-wrap:wrap;
-    gap:6px;
+    display:block;   /* ← ★flexやめる */
   }
 
-  /* 番号 */
   .row > div:nth-child(1){
+    display:inline-block;
     width:auto;
+    margin-right:6px;
   }
 
-  /* ▶ */
   .row > button:nth-child(2){
-    width:auto;
+    display:inline-block;
   }
 
-  /* 名前 */
   .row > div:nth-child(3){
-    width:100%;
+    display:block;
+    margin-top:4px;
     font-size:16px;
   }
 
-  /* 編集 */
   .row > button:nth-child(4){
-    width:auto;
+    display:block;
+    margin-top:6px;
     margin-left:auto;
   }
+
 }
 </style>
 </head>
