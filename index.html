@@ -226,11 +226,15 @@ function stopAudio(){
     viewerAudio = null;
   }
 
-  // ✅ 全ボタンリセットに変える
-  document.querySelectorAll(".play").forEach(b=>{
-    b.textContent = "▶";
-  });
+  // ✅ 全部消す
+  document.querySelectorAll(".row.playing")
+    .forEach(r => r.classList.remove("playing"));
 
+  if(currentBtn){
+    currentBtn.textContent = "▶";
+  }
+
+  currentBtn = null;
   currentRow = null;
   currentDocId = null;
 }
@@ -272,6 +276,11 @@ async function loadAndPlayAudio(id, row, btn){
       btn.textContent = "⏸";
 
       if(currentRow) currentRow.classList.remove("playing");
+
+      // ✅ 先に全部消す（これが決定打）
+      document.querySelectorAll(".row.playing")
+        .forEach(r => r.classList.remove("playing"));
+
       row.classList.add("playing");
 
       currentRow = row;
