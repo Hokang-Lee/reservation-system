@@ -279,8 +279,9 @@ async function loadAndPlayAudio(id, row){
 
       await audio.play();
 
-      // ✅ ここ追加
-      if(currentBtn) currentBtn.textContent = "⏸";
+      requestAnimationFrame(()=>{
+        if(currentBtn) currentBtn.textContent = "⏸";
+      });
 
       if(currentRow) currentRow.classList.remove("playing");
       row.classList.add("playing");
