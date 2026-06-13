@@ -143,32 +143,42 @@ button:hover{
     font-size:14px;
   }
 
-  /* ✅ ここが重要 */
-
+  /* ✅ 行を完全カード化 */
   .row{
-    display:block;   /* ← ★flexやめる */
+    display:flex;
+    flex-direction:column;
+    align-items:stretch;
+    gap:6px;
   }
 
-  .row > div:nth-child(1){
-    display:inline-block;
-    width:auto;
-    margin-right:6px;
-  }
-
+  /* ✅ 上段：番号＋再生 */
+  .row > div:nth-child(1),
   .row > button:nth-child(2){
     display:inline-block;
   }
 
-  .row > div:nth-child(3){
-    display:block;
-    margin-top:4px;
-    font-size:16px;
+  /* 上段まとめ */
+  .row > div:nth-child(1){
+    font-weight:bold;
+    margin-right:6px;
   }
 
-  .row > button:nth-child(4){
+  .row > button:nth-child(2){
+    margin-left:4px;
+  }
+
+  /* ✅ 名前を完全独立ブロック */
+  .row > div:nth-child(3){
     display:block;
-    margin-top:6px;
-    margin-left:auto;
+    width:100%;
+    font-size:16px;
+    font-weight:500;
+    word-break: break-word;
+  }
+
+  /* ✅ 編集ボタンを右下へ */
+  .row > button:nth-child(4){
+    align-self:flex-end;
   }
 
 }
