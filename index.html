@@ -467,6 +467,20 @@ document.getElementById("closePdf").onclick=()=>{
 db.ref("reservations").on("value",snap=>{
   render(snap.val());
 });
+
+// ===== 離脱停止（ここに追加） =====
+
+document.addEventListener("visibilitychange",()=>{
+  if(document.visibilityState==="hidden"){
+    stopAudio();
+  }
+});
+
+window.addEventListener("pagehide", stopAudio);
+window.addEventListener("blur", stopAudio);
+window.addEventListener("beforeunload", stopAudio);
+
+
 </script>
 
 </body>
