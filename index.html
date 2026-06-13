@@ -418,13 +418,18 @@ function render(data){
 
         currentBtn = btn;   // ✅ ここ重要（入れてないとUIズレる）
 
+        // ✅ 先にPDF表示（重要）
+        document.getElementById("pdfViewer").src = `docs/${id}.pdf`;
+
         try{
           await loadAndPlayAudio(id, row);
           currentDocId = id;
         }catch{
-          stopAudio();
+          // ✅ 音声が無くても無視（ここポイント）
+          console.log("音声なしでも続行");
         }
       };
+
 
       top.appendChild(num);
       top.appendChild(btn);
