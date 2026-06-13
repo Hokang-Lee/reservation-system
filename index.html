@@ -16,7 +16,7 @@ body{
   background:#f5f7fb;
 }
 
-/* サイド */
+/* 左サイド */
 h1{
   width:200px;
   margin:0;
@@ -36,7 +36,7 @@ h1{
   padding:24px;
 }
 
-/* タイトル */
+/* タイトルカード */
 .title{
   font-weight:bold;
   padding:12px 16px;
@@ -51,7 +51,7 @@ h1{
   margin:6px 0 10px;
 }
 
-/* 行（カード） */
+/* 行カード */
 .row{
   display:flex;
   align-items:center;
@@ -64,34 +64,43 @@ h1{
   transition:.2s;
 }
 
-/* hover */
 .row:hover{
   transform:translateY(-2px);
 }
 
-/* 列固定（HTML変更なし対応） */
-.row > div:nth-child(1){
-  width:60px;
+/* ✅ row-top */
+.row-top{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  width:110px;
+}
+
+.row-top .seat{
+  width:55px;
   font-weight:bold;
 }
-.row > button:nth-child(2){
-  width:48px;
+
+.row-top .play{
+  width:45px;
   text-align:center;
 }
-.row > div:nth-child(3){
+
+/* ✅ label / edit */
+.label{
   flex:1;
+  font-size:15px;
 }
-.row > button:nth-child(4){
+
+.edit{
   width:70px;
+  text-align:center;
 }
 
 /* 状態 */
-.empty-row{
-  border-left:6px solid #22c55e;
-}
-.filled-row{
-  border-left:6px solid #2563eb;
-}
+.empty-row{ border-left:6px solid #22c55e; }
+.filled-row{ border-left:6px solid #2563eb; }
+
 .playing{
   outline:3px solid #f59e0b;
   background:#fff7ed;
@@ -118,6 +127,7 @@ button:hover{
   background:#111;
   position:relative;
 }
+
 #pdfViewer{
   width:100%;
   height:100%;
@@ -133,7 +143,7 @@ button:hover{
   color:white;
 }
 
-/* ✅ スマホ最適化 */
+/* ✅ モバイル完全対応 */
 @media (max-width:768px){
 
   #viewer{ display:none; }
@@ -143,41 +153,28 @@ button:hover{
     font-size:14px;
   }
 
-  /* ✅ 行を完全カード化 */
   .row{
-    display:flex;
     flex-direction:column;
     align-items:stretch;
     gap:6px;
   }
 
-  /* ✅ 上段：番号＋再生 */
-  .row > div:nth-child(1),
-  .row > button:nth-child(2){
-    display:inline-block;
+  /* 上段 */
+  .row-top{
+    width:auto;
   }
 
-  /* 上段まとめ */
-  .row > div:nth-child(1){
-    font-weight:bold;
-    margin-right:6px;
-  }
-
-  .row > button:nth-child(2){
-    margin-left:4px;
-  }
-
-  /* ✅ 名前を完全独立ブロック */
-  .row > div:nth-child(3){
-    display:block;
+  /* 名前 */
+  .label{
     width:100%;
     font-size:16px;
     font-weight:500;
     word-break: break-word;
   }
 
-  /* ✅ 編集ボタンを右下へ */
-  .row > button:nth-child(4){
+  /* 編集 */
+  .edit{
+    width:auto;
     align-self:flex-end;
   }
 
@@ -210,11 +207,11 @@ firebase.initializeApp({
   authDomain:"reservation-2026.firebaseapp.com",
   databaseURL:"https://reservation-2026-default-rtdb.firebaseio.com/",
   projectId:"reservation-2026"
-});
+})
 const db = firebase.database();
 
 // ===== 状態 =====
-let viewerAudio = new Audio();
+let viewerAudio=new Audio();
 let currentDocId=null;
 let currentRow=null;
 let currentBtn=null;
@@ -223,7 +220,7 @@ let isAudioPlaying=false;
 // ===== 停止 =====
 function stopAudio(){
   viewerAudio.pause();
-  viewerAudio.currentTime = 0;
+  viewerAudio.currentTime=0;
   viewerAudio.src="";
   viewerAudio.load();
 
@@ -248,7 +245,6 @@ async function loadAndPlayAudio(id,row){
 
   for(const ext of formats){
     const url=`audio/${id}.${ext}`;
-
     try{
       await new Promise((res,rej)=>{
         const a=new Audio(url);
@@ -263,7 +259,6 @@ async function loadAndPlayAudio(id,row){
       if(currentRow) currentRow.classList.remove("playing");
       row.classList.add("playing");
       currentRow=row;
-
       return;
 
     }catch{}
@@ -273,9 +268,7 @@ async function loadAndPlayAudio(id,row){
 }
 
 // ===== ユーティリティ =====
-function formatSeat(seat){
-  return String(seat).padStart(3,"0");
-}
+function formatSeat(s){return String(s).padStart(3,"0");}
 
 // ===== 設定 =====
 const config={
@@ -289,7 +282,6 @@ const config={
   validUntil:"2026-08-03"
 };
 
-// ===== 開始番号 =====
 function getStart(dateStr){
   const date=new Date(dateStr);
   date.setHours(0,0,0,0);
@@ -308,18 +300,16 @@ function getStart(dateStr){
 
   const base=list[0];
   const weeks=Math.floor((date-base.d)/(7*24*60*60*1000));
-
   return base.start + weeks*config.weekIncrement;
 }
 
-// ===== 日付 =====
 function generateDates(){
   const result=[];
   const today=new Date();
   today.setHours(0,0,0,0);
   const end=new Date(config.validUntil);
 
-  for(let d=new Date("2026-01-01"); d<=end; d.setDate(d.getDate()+1)){
+  for(let d=new Date("2026-01-01");d<=end;d.setDate(d.getDate()+1)){
     d.setHours(0,0,0,0);
     if(d<today) continue;
     const day=d.getDay();
@@ -358,7 +348,6 @@ function render(data){
     }else{
       title.style.background="#f0f0f0";
     }
-
     app.appendChild(title);
 
     let used=0;
@@ -384,10 +373,16 @@ function render(data){
       row.className="row";
       row.classList.add(name?"filled-row":"empty-row");
 
+      // ✅ row-top
+      const top=document.createElement("div");
+      top.className="row-top";
+
       const num=document.createElement("div");
+      num.className="seat";
       num.textContent=seat;
 
       const btn=document.createElement("button");
+      btn.className="play";
       btn.textContent="▶";
 
       btn.onclick=async()=>{
@@ -405,17 +400,19 @@ function render(data){
         document.getElementById("pdfViewer").src=
           `docs/${id}.pdf#zoom=page-width`;
 
-        try{
-          await loadAndPlayAudio(id,row);
-        }catch{
-          stopAudio();
-        }
+        try{ await loadAndPlayAudio(id,row); }
+        catch{ stopAudio(); }
       };
 
+      top.appendChild(num);
+      top.appendChild(btn);
+
       const label=document.createElement("div");
-      label.innerHTML=name||"空き";
+      label.className="label";
+      label.innerHTML=name?`<b>${name}</b>`:"空き";
 
       const edit=document.createElement("button");
+      edit.className="edit";
       edit.textContent=name?"編集":"予約";
       edit.onclick=()=>{
         const input=prompt("名前入力",name);
@@ -424,8 +421,7 @@ function render(data){
         input.trim()===""?ref.remove():ref.set(input.trim());
       };
 
-      row.appendChild(num);
-      row.appendChild(btn);
+      row.appendChild(top);
       row.appendChild(label);
       row.appendChild(edit);
 
