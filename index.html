@@ -1,62 +1,110 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="UTF-8">
-<title>予約システム</title>
+<metaシステム</title><meta charset="UTF-8">
 
 <style>
-body { font-family: sans-serif; margin: 0; display: flex; height: 100vh; }
+body {
+  font-family: "Segoe UI", "Noto Sans JP", sans-serif;
+  margin: 0;
+  display: flex;
+  height: 100vh;
+  background: #f5f7fb;
+}
 
+/* サイドバー */
 h1 {
   width: 200px;
   margin: 0;
-  background: #2563eb;
+  background: linear-gradient(180deg,#2563eb,#1e40af);
   color: white;
   display: flex;
-  flex-direction: column;
   justify-content: center;
   align-items: center;
   text-align: center;
-  line-height: 1.3;
+  line-height: 1.4;
+  font-size: 18px;
 }
 
-#app { flex: 1; overflow-y: auto; padding: 20px; }
-#viewer { width: 40%; background: #222; }
+/* メイン */
+#app {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+}
 
+/* 日付タイトル */
+.title {
+  font-weight: bold;
+  padding: 12px 16px;
+  margin-top: 28px;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+}
+
+/* 残席 */
+.remain {
+  margin: 8px 0 10px;
+  font-size: 14px;
+}
+
+/* 行 */
+.row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  margin-bottom: 8px;
+  background: white;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  transition: 0.2s;
+}
+.row:hover {
+  transform: translateY(-2px);
+}
+
+/* 状態 */
+.empty-row { border-left: 6px solid #22c55e; }
+.filled-row { border-left: 6px solid #2563eb; }
+
+.playing {
+  outline: 3px solid #f59e0b;
+  background: #fff7ed;
+}
+
+/* ラベル */
+.label { flex: 1; font-size: 15px; }
+
+/* ボタン */
+button {
+  border: none;
+  background: #e5e7eb;
+  padding: 6px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+button:hover {
+  background: #d1d5db;
+}
+
+/* PDF */
+#viewer {
+  width: 40%;
+  background: #111;
+}
 #pdfViewer {
   width: 100%;
   height: 100%;
   border: none;
 }
 
-.title {
-  font-weight: bold;
-  padding: 10px;
-  margin-top: 20px;
-}
-
-.row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px;
-  border-bottom: 1px solid #ddd;
-}
-
-.empty-row { background: #e8ffe8; border-left: 6px solid green; }
-.filled-row { background: #e0edff; border-left: 6px solid #2563eb; }
-
-.playing {
-  background: #fff7ed !important;
-  outline: 3px solid #f59e0b;
-}
-
-.label { flex: 1; }
-
-@media (max-width: 768px) {
-  body { flex-direction: row; }
-  h1 { width: 110px; font-size: 14px; }
-  #viewer { display: none; }
+/* スマホ */
+@media (max-width:768px){
+  h1 { width:110px; font-size:14px; }
+  #viewer { display:none; }
 }
 </style>
 </head>
@@ -64,8 +112,8 @@ h1 {
 <body>
 
 <h1>
-  予習機能付き<br>
-  訓読予約システム
+予習機能付き<br>
+訓読予約
 </h1>
 
 <div id="app"></div>
@@ -74,11 +122,12 @@ h1 {
   <iframe id="pdfViewer"></iframe>
 </div>
 
+
+<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 
 <script>
-
 // ===== Firebase =====
 firebase.initializeApp({
   apiKey:"AIzaSyDvjXQ5xX_jwcHcXnESjjJalCq2xqL2qIw",
@@ -89,37 +138,83 @@ firebase.initializeApp({
 const db = firebase.database();
 
 // ===== 状態 =====
-let viewerAudio = null;
+let viewerAudio = new Audio();
+let currentDocId = null;
 let currentRow = null;
 
-// ===== 停止 =====
-function stopAudio(){
-  if(viewerAudio){
-    viewerAudio.pause();
-    viewerAudio.src = "";
-    viewerAudio = null;
-  }
+// ===== 音声停止（強化版）=====
+function stopAudio() {
+  viewerAudio.pause();
+  viewerAudio.currentTime = 0;
+  viewerAudio.src = "";
+  viewerAudio.load();
+
   if(currentRow){
     currentRow.classList.remove("playing");
     currentRow = null;
   }
 }
 
-// ✅ 離脱対策
+// ✅ 離脱完全対策
 window.addEventListener("beforeunload", stopAudio);
 window.addEventListener("pagehide", stopAudio);
-document.addEventListener("visibilitychange", ()=>{
+window.addEventListener("blur", stopAudio);
+
+document.addEventListener("visibilitychange",()=>{
   if(document.visibilityState==="hidden"){
     stopAudio();
   }
 });
+
+// ===== 音声ロード（m4a/aac混在対応）=====
+async function loadAndPlayAudio(id, row) {
+  const formats = ["m4a", "aac"];
+  let found = false;
+
+  for (const ext of formats) {
+    const url = `audio/${id}.${ext}`;
+
+    try {
+      await new Promise((resolve, reject) => {
+        const testAudio = new Audio();
+        testAudio.src = url;
+
+        testAudio.oncanplaythrough = () => {
+          resolve();
+        };
+
+        testAudio.onerror = () => {
+          reject();
+        };
+      });
+
+      // ✅ 再生
+      viewerAudio.src = url;
+      await viewerAudio.play();
+
+      if (currentRow) currentRow.classList.remove("playing");
+      row.classList.add("playing");
+      currentRow = row;
+
+      found = true;
+      break;
+
+    } catch {
+      // 次の拡張子へ
+    }
+  }
+
+  if (!found) {
+    console.warn("音声なし:", id);
+  }
+}
 
 // ===== 3桁 =====
 function formatSeat(seat){
   return String(seat).padStart(3,"0");
 }
 
-// ===== 座席 =====
+// ===== 座席設定 =====
 const config = {
   weekIncrement: 35,
   anchors: [
@@ -131,6 +226,7 @@ const config = {
   validUntil: "2026-08-03"
 };
 
+// ===== 開始番号 =====
 function getStart(dateStr){
   const date = new Date(dateStr);
   date.setHours(0,0,0,0);
@@ -149,38 +245,29 @@ function getStart(dateStr){
 
   const base = list[0];
   const weeks = Math.floor((date-base.d)/(7*24*60*60*1000));
-  return base.start + weeks*config.weekIncrement;
+  return base.start + weeks * config.weekIncrement;
 }
 
+// ===== 日付生成 =====
 function generateDates(){
-
-  const res=[];
+  const result=[];
   const today=new Date();
   today.setHours(0,0,0,0);
-
   const end=new Date(config.validUntil);
 
   for(let d=new Date("2026-01-01"); d<=end; d.setDate(d.getDate()+1)){
-
     d.setHours(0,0,0,0);
     if(d<today) continue;
 
     const day=d.getDay();
-
     if(day===0||day===1){
-
       const y=d.getFullYear();
       const m=String(d.getMonth()+1).padStart(2,"0");
       const da=String(d.getDate()).padStart(2,"0");
-
-      // ✅ これにする
-      const dateStr = `${y}-${m}-${da}`;
-
-      res.push(dateStr);
+      result.push(`${y}-${m}-${da}`);
     }
   }
-
-  return res;
+  return result;
 }
 
 const dates = generateDates();
@@ -188,54 +275,46 @@ const SEAT = 5;
 
 // ===== 描画 =====
 function render(data){
-
   const app=document.getElementById("app");
   app.innerHTML="";
 
   dates.forEach(date=>{
-
     const start=getStart(date);
     if(start===null) return;
 
-    const day=new Date(date).getDay();
+    const d=new Date(date);
+    const day=d.getDay();
 
     const title=document.createElement("div");
     title.className="title";
     title.innerHTML=`■ 読み手（${date} ${day===0?"日":"月"}）`;
-
     if(day===0){
       title.style.color="red";
       title.style.background="#ffeaea";
-    }else{
-      title.style.background="#f0f0f0";
     }
-
     app.appendChild(title);
 
     let used=0;
     for(let i=0;i<SEAT;i++){
-      const seat=start+i;
-      if(data?.[date]?.[seat]) used++;
+      if(data && data[date] && data[date][start+i]) used++;
     }
 
     const remain=SEAT-used;
-
     const remainDiv=document.createElement("div");
-    remainDiv.innerHTML =
+    remainDiv.className="remain";
+    remainDiv.innerHTML=
       remain===0
-      ? `<b style="color:#3399ff;">🔵 満席</b>`
-      : `<b style="color:green;">🟢 空き：あと${remain}席</b>`;
-
+      ? `<b style="color:#3b82f6;">🔵 満席</b>`
+      : `<b style="color:#16a34a;">🟢 空き：あと${remain}席</b>`;
     app.appendChild(remainDiv);
 
     for(let i=0;i<SEAT;i++){
-
       const seat=start+i;
-      const name=data?.[date]?.[seat]||"";
+      const name=(data && data[date] && data[date][seat]) || "";
 
       const row=document.createElement("div");
       row.className="row";
-      row.classList.add(name?"filled-row":"empty-row");
+      row.classList.add(name ? "filled-row":"empty-row");
 
       const num=document.createElement("div");
       num.textContent=seat;
@@ -243,47 +322,42 @@ function render(data){
       const btn=document.createElement("button");
       btn.textContent="📄";
 
-      const id=formatSeat(seat);
+      btn.onclick = async () => {
+        const id = formatSeat(seat);
 
-      btn.onclick = () => {
-
-        // ✅ 割り込み再生
-        stopAudio();
-
-        viewerAudio = new Audio();
-
-        // ✅ AAC一本化（最重要）
-        viewerAudio.src = `audio/${id}.aac`;
-
-        // ✅ playは1回だけ
-        const p = viewerAudio.play();
-        if(p){
-          p.catch(err => {
-            console.log("再生失敗", err);
-          });
+        // ✅ PDFを先に確実に開く
+        if (window.innerWidth < 768) {
+          window.open(`docs/${id}.pdf`);
+        } else {
+          document.getElementById("pdfViewer").src =
+            `docs/${id}.pdf#zoom=page-width`;
         }
 
-        // ✅ PDF
-        document.getElementById("pdfViewer").src =
-          `docs/${id}.pdf#zoom=page-width`;
+        try {
+          if (currentDocId === id && !viewerAudio.paused) {
+            stopAudio();
+            return;
+          }
 
-        // ✅ UI
-        if(currentRow) currentRow.classList.remove("playing");
-        row.classList.add("playing");
-        currentRow = row;
+          currentDocId = id;
+          stopAudio();
+
+          await loadAndPlayAudio(id, row);
+        } catch (e) {
+          console.warn("音声エラー:", e);
+        }
       };
-
       const label=document.createElement("div");
       label.className="label";
-      label.innerHTML=name?`<b>${name}</b>`:"空き";
+      label.innerHTML=name
+        ? `<b>${name}</b>`
+        : `<span style="color:#888;">空き（予約できます）</span>`;
 
       const edit=document.createElement("button");
-      edit.textContent=name?"編集":"予約";
-
+      edit.textContent=name ? "編集":"予約";
       edit.onclick=()=>{
         const input=prompt("名前入力",name);
-        if(input===null)return;
-
+        if(input===null) return;
         const ref=db.ref(`reservations/${date}/${seat}`);
         input.trim()==="" ? ref.remove() : ref.set(input.trim());
       };
@@ -292,17 +366,16 @@ function render(data){
       row.appendChild(btn);
       row.appendChild(label);
       row.appendChild(edit);
-
       app.appendChild(row);
     }
-
   });
 }
 
+// ===== 起動 =====
 db.ref("reservations").on("value",snap=>{
   render(snap.val());
 });
-
 </script>
+
 </body>
 </html>
