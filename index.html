@@ -153,6 +153,7 @@ function getStart(dateStr){
 }
 
 function generateDates(){
+
   const res=[];
   const today=new Date();
   today.setHours(0,0,0,0);
@@ -160,13 +161,25 @@ function generateDates(){
   const end=new Date(config.validUntil);
 
   for(let d=new Date("2026-01-01"); d<=end; d.setDate(d.getDate()+1)){
+
     d.setHours(0,0,0,0);
     if(d<today) continue;
 
-    if(d.getDay()===0||d.getDay()===1){
-      res.push(d.toISOString().slice(0,10));
+    const day=d.getDay();
+
+    if(day===0||day===1){
+
+      const y=d.getFullYear();
+      const m=String(d.getMonth()+1).padStart(2,"0");
+      const da=String(d.getDate()).padStart(2,"0");
+
+      // ✅ これにする
+      const dateStr = `${y}-${m}-${da}`;
+
+      res.push(dateStr);
     }
   }
+
   return res;
 }
 
