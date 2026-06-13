@@ -12,18 +12,15 @@ h1 {
   margin: 0;
   background: #2563eb;
   color: white;
-
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
-
   text-align: center;
   line-height: 1.3;
 }
 
 #app { flex: 1; overflow-y: auto; padding: 20px; }
-
 #viewer { width: 40%; background: #222; }
 
 #pdfViewer {
@@ -92,22 +89,23 @@ firebase.initializeApp({
 const db = firebase.database();
 
 // ===== 状態 =====
-let viewerAudio = new Audio();
-let isPlaying = false;
-let currentDocId = null;
+let viewerAudio = null;
 let currentRow = null;
 
 // ===== 停止 =====
 function stopAudio(){
-  viewerAudio.pause();
-  viewerAudio.currentTime = 0;
+  if(viewerAudio){
+    viewerAudio.pause();
+    viewerAudio.src = "";
+    viewerAudio = null;
+  }
   if(currentRow){
     currentRow.classList.remove("playing");
     currentRow = null;
   }
 }
 
-// ✅ 離脱対策
+// ✅ ページ離脱対策
 window.addEventListener("beforeunload", stopAudio);
 window.addEventListener("pagehide", stopAudio);
 document.addEventListener("visibilitychange", ()=>{
@@ -166,12 +164,8 @@ function generateDates(){
     d.setHours(0,0,0,0);
     if(d<today) continue;
 
-    const day=d.getDay();
-    if(day===0 || day===1){
-      const y=d.getFullYear();
-      const m=String(d.getMonth()+1).padStart(2,"0");
-      const da=String(d.getDate()).padStart(2,"0");
-      res.push(`${y}-${m}-${da}`);
+    if(d.getDay()===0||d.getDay()===1){
+      res.push(d.toISOString().slice(0,10));
     }
   }
   return res;
@@ -191,8 +185,7 @@ function render(data){
     const start=getStart(date);
     if(start===null) return;
 
-    const d=new Date(date);
-    const day=d.getDay();
+    const day=new Date(date).getDay();
 
     const title=document.createElement("div");
     title.className="title";
@@ -216,10 +209,11 @@ function render(data){
     const remain=SEAT-used;
 
     const remainDiv=document.createElement("div");
-    remainDiv.innerHTML=
+    remainDiv.innerHTML =
       remain===0
       ? `<b style="color:#3399ff;">🔵 満席</b>`
       : `<b style="color:green;">🟢 空き：あと${remain}席</b>`;
+
     app.appendChild(remainDiv);
 
     for(let i=0;i<SEAT;i++){
@@ -239,35 +233,33 @@ function render(data){
 
       const id=formatSeat(seat);
 
-      btn.onclick = async ()=>{
+      btn.onclick = () => {
 
-        if(isPlaying) return;
-
-        // ✅ まず音を鳴らす（iPhone対策）
         stopAudio();
-        viewerAudio.src=`audio/${id}.m4a`;
-        viewerAudio.load();
 
-        try{
-          await viewerAudio.play();
-        }catch{
-          viewerAudio.src=`audio/${id}.aac`;
-          viewerAudio.load();
-          await viewerAudio.play();
+        viewerAudio = new Audio();
+
+        // ✅ AAC優先（最安定）
+        viewerAudio.src = `audio/${id}.aac`;
+
+        const p = viewerAudio.play();
+
+        if(p){
+          p.catch(()=>{
+            // ✅ fallback（必要時のみ）
+            viewerAudio.src = `audio/${id}.m4a`;
+            viewerAudio.play().catch(e=>console.log("再生失敗",e));
+          });
         }
 
-        isPlaying=true;
-
-        // ✅ 後からPDF
+        // ✅ PDF
         document.getElementById("pdfViewer").src =
           `docs/${id}.pdf#zoom=page-width`;
 
+        // ✅ UI
         if(currentRow) currentRow.classList.remove("playing");
         row.classList.add("playing");
-        currentRow=row;
-
-        currentDocId=id;
-        isPlaying=false;
+        currentRow = row;
       };
 
       const label=document.createElement("div");
@@ -279,7 +271,7 @@ function render(data){
 
       edit.onclick=()=>{
         const input=prompt("名前入力",name);
-        if(input===null) return;
+        if(input===null)return;
 
         const ref=db.ref(`reservations/${date}/${seat}`);
         input.trim()==="" ? ref.remove() : ref.set(input.trim());
