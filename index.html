@@ -226,18 +226,12 @@ function stopAudio(){
     viewerAudio = null;
   }
 
-  // ✅ btn消さない（ここ重要）
-  if(currentBtn){
-    currentBtn.textContent = "▶";
-  }
+  // ✅ 全ボタンリセットに変える
+  document.querySelectorAll(".play").forEach(b=>{
+    b.textContent = "▶";
+  });
 
-  currentBtn = null;
-
-  if(currentRow){
-    currentRow.classList.remove("playing");
-    currentRow = null;
-  }
-
+  currentRow = null;
   currentDocId = null;
 }
 
@@ -417,8 +411,6 @@ function render(data){
 
         stopAudio();
 
-        currentBtn = btn; // UIリセット用だけに使う
-
         document.getElementById("pdfViewer").src = `docs/${id}.pdf`;
 
         try{
@@ -427,7 +419,7 @@ function render(data){
         }catch{
           stopAudio();
         }
-      };
+};
 
       top.appendChild(num);
       top.appendChild(btn);
