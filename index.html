@@ -105,7 +105,7 @@ function stopAudio(){
   }
 }
 
-// ✅ ページ離脱対策
+// ✅ 離脱対策
 window.addEventListener("beforeunload", stopAudio);
 window.addEventListener("pagehide", stopAudio);
 document.addEventListener("visibilitychange", ()=>{
@@ -119,7 +119,7 @@ function formatSeat(seat){
   return String(seat).padStart(3,"0");
 }
 
-// ===== 座席ロジック =====
+// ===== 座席 =====
 const config = {
   weekIncrement: 35,
   anchors: [
@@ -152,7 +152,6 @@ function getStart(dateStr){
   return base.start + weeks*config.weekIncrement;
 }
 
-// ===== 日付 =====
 function generateDates(){
   const res=[];
   const today=new Date();
@@ -235,20 +234,19 @@ function render(data){
 
       btn.onclick = () => {
 
+        // ✅ 割り込み再生
         stopAudio();
 
         viewerAudio = new Audio();
 
-        // ✅ AAC優先（最安定）
+        // ✅ AAC一本化（最重要）
         viewerAudio.src = `audio/${id}.aac`;
 
+        // ✅ playは1回だけ
         const p = viewerAudio.play();
-
         if(p){
-          p.catch(()=>{
-            // ✅ fallback（必要時のみ）
-            viewerAudio.src = `audio/${id}.m4a`;
-            viewerAudio.play().catch(e=>console.log("再生失敗",e));
+          p.catch(err => {
+            console.log("再生失敗", err);
           });
         }
 
