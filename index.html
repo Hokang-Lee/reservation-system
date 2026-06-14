@@ -43,11 +43,7 @@ button{
   border-radius:8px; cursor:pointer; transition:.2s;
 }
 button:hover{ background:#d1d5db; }
-#viewer{ width:40%; height:100%; min-height:0; background:#111; position:relative; }
-#pdfViewer{ width:100%; height:100%; border:none; }
-#closePdf{ position:absolute; top:10px; right:10px; background:red; color:white; }
 @media (max-width:768px){
-  #viewer{ display:none; }
   h1{ width:110px; font-size:14px; }
   .row{ flex-direction:column; align-items:stretch; gap:6px; }
   .row-top{ width:auto; }
@@ -60,10 +56,6 @@ button:hover{ background:#d1d5db; }
 
 <h1>予習機能付き<br>訓読予約</h1>
 <div id="app"></div>
-<div id="viewer">
-  <button id="closePdf">✖</button>
-  <iframe id="pdfViewer"></iframe>
-</div>
 
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
@@ -83,7 +75,7 @@ let currentRow   = null;
 let currentBtn   = null;
 let lastPlayedAt = 0;
 
-// iOSはPDF iframeロードでhiddenが遅れて来るため3000msに設定
+// PDFを別タブで開いた際やiOSで一瞬hiddenになることがあるため3000msに設定
 const GUARD_MS = 3000;
 
 // ===== 停止 =====
@@ -252,8 +244,10 @@ function render(data){
         if(currentDocId===id && viewerAudio && !viewerAudio.paused){
           stopAudio(); return;
         }
+        // PDFを別タブで開く（ユーザー操作の文脈を保つため一番最初・同期的に実行）
+        window.open(`docs/${id}.pdf`, "_blank");
+
         stopAudio();
-        document.getElementById("pdfViewer").src=`docs/${id}.pdf`;
         try{
           await loadAndPlayAudio(id, row, btn);
           currentDocId=id;
@@ -279,11 +273,6 @@ function render(data){
     }
   });
 }
-
-document.getElementById("closePdf").onclick=()=>{
-  document.getElementById("pdfViewer").src="";
-  stopAudio();
-};
 
 db.ref("reservations").on("value", snap=>{ render(snap.val()); });
 
