@@ -68,7 +68,6 @@ h1{
   transform:translateY(-2px);
 }
 
-/* ✅ row-top */
 .row-top{
   display:flex;
   align-items:center;
@@ -86,7 +85,6 @@ h1{
   text-align:center;
 }
 
-/* ✅ label / edit */
 .label{
   flex:1;
   font-size:15px;
@@ -143,7 +141,22 @@ button:hover{
   color:white;
 }
 
-/* ✅ モバイル完全対応 */
+/* デバッグ */
+#_dbgBox{
+  position:fixed;
+  bottom:0; left:0; right:0;
+  background:rgba(0,0,0,0.85);
+  color:#0f0;
+  font:11px/1.4 monospace;
+  padding:6px 8px;
+  max-height:160px;
+  overflow-y:auto;
+  white-space:pre;
+  z-index:9999;
+  pointer-events:none;
+}
+
+/* モバイル */
 @media (max-width:768px){
 
   #viewer{ display:none; }
@@ -159,12 +172,10 @@ button:hover{
     gap:6px;
   }
 
-  /* 上段 */
   .row-top{
     width:auto;
   }
 
-  /* 名前 */
   .label{
     width:100%;
     font-size:16px;
@@ -172,7 +183,6 @@ button:hover{
     word-break: break-word;
   }
 
-  /* 編集 */
   .edit{
     width:auto;
     align-self:flex-end;
@@ -196,6 +206,9 @@ button:hover{
   <iframe id="pdfViewer"></iframe>
 </div>
 
+<!-- デバッグログ表示エリア -->
+<div id="_dbgBox"></div>
+
 <!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
@@ -210,33 +223,46 @@ firebase.initializeApp({
 })
 const db = firebase.database();
 
+// ===== デバッグログ =====
+const _dbgLines = [];
+function dbg(msg){
+  const t = new Date().toISOString().slice(11,23);
+  _dbgLines.unshift(`[${t}] ${msg}`);
+  if(_dbgLines.length > 40) _dbgLines.pop();
+  const el = document.getElementById("_dbgBox");
+  if(el) el.textContent = _dbgLines.join("\n");
+}
+
 // ===== 状態 =====
 let viewerAudio = null;
-let currentDocId=null;
-let currentRow=null;
-let currentBtn=null;
-let isAudioPlaying=false;
+let currentDocId = null;
+let currentRow   = null;
+let currentBtn   = null;
 
 // ===== 停止 =====
-function stopAudio(){
+function stopAudio(reason=""){
+
+  dbg(`stopAudio(${reason}) audio=${!!viewerAudio}`);
 
   if(viewerAudio){
+    // イベントを全部外してから止める（onpause → ▶ の誤発火防止）
+    viewerAudio.onplay  = null;
+    viewerAudio.onpause = null;
+    viewerAudio.onended = null;
+    viewerAudio.onerror = null;
     viewerAudio.pause();
     viewerAudio.currentTime = 0;
     viewerAudio = null;
   }
 
-  // ✅ 全部消す
   document.querySelectorAll(".row.playing")
     .forEach(r => r.classList.remove("playing"));
 
-  if(currentBtn){
-    currentBtn.textContent = "▶";
-  }
+  if(currentBtn) currentBtn.textContent = "▶";
 
-  currentBtn = null;
-  currentRow = null;
-  currentDocId = null;
+  currentBtn    = null;
+  currentRow    = null;
+  currentDocId  = null;
 }
 
 // ===== 音声 =====
@@ -247,47 +273,43 @@ async function loadAndPlayAudio(id, row, btn){
   for(const ext of formats){
 
     const url = `audio/${id}.${ext}`;
+    dbg(`try ${url}`);
 
     try{
 
       const audio = new Audio(url);
 
-      // Android autoplay対策:
-      // canplaythroughを待つと「ユーザー操作の同期コンテキスト」を外れ
-      // Androidのautoplayポリシーで再生がブロックされる。
-      // play()を即座に呼んでPromiseを待つだけにする。
-      // ネットワーク遅延中でもブラウザが再生権限を保持している間に
-      // play()が呼ばれるため、バッファリングしながら再生が始まる。
-
-      audio.onplay   = () => { btn.textContent = "⏸"; };
-      audio.onpause  = () => { btn.textContent = "▶"; };
-      audio.onended  = stopAudio;
-
-      // onerrorはPromiseとは別に非同期で発火する場合があるため
-      // load失敗（404等）はplay()のrejectで捕捉する
-      audio.onerror = null;
+      // イベント登録（play()前）
+      audio.onplay  = () => { dbg("onplay fired"); btn.textContent = "⏸"; };
+      audio.onpause = () => { dbg("onpause fired"); if(viewerAudio) btn.textContent = "▶"; };
+      audio.onended = () => { dbg("onended fired"); stopAudio("ended"); };
+      audio.onerror = () => { dbg(`onerror code=${audio.error?.code} msg=${audio.error?.message}`); };
 
       viewerAudio = audio;
 
-      // play()をawaitすることでAndroidの再生権限チェックを通過させる
-      await audio.play();
+      // タップコンテキスト内で即 play() を呼ぶ
+      // （awaitより前に同期的に呼ぶことで Android autoplay policy を通過）
+      dbg("play() call...");
+      const playPromise = audio.play();
+      dbg("play() called (before await)");
 
-      // play()が解決した時点で再生開始確定
-      btn.textContent = "⏸";
+      await playPromise;
+      dbg("play() resolved ✓");
 
+      // playing クラスを付与
       document.querySelectorAll(".row.playing")
         .forEach(r => r.classList.remove("playing"));
-
       row.classList.add("playing");
       currentRow = row;
+      currentBtn = btn;
 
-      return;
+      return; // 成功
 
     }catch(e){
-      // play()がrejectされた場合（ファイルなし or autoplay拒否）
-      // viewerAudioをnullに戻して次のフォーマットへ
-      if(viewerAudio) { viewerAudio.onerror = null; }
+      dbg(`play() rejected: ${e.name}: ${e.message}`);
+      if(viewerAudio){ viewerAudio.onerror = null; }
       viewerAudio = null;
+      // 次のフォーマットへ
     }
   }
 
@@ -400,7 +422,6 @@ function render(data){
       row.className="row";
       row.classList.add(name?"filled-row":"empty-row");
 
-      // ✅ row-top
       const top=document.createElement("div");
       top.className="row-top";
 
@@ -414,22 +435,26 @@ function render(data){
 
       btn.onclick = async ()=>{
 
+        dbg(`=== tap id=${id} currentDocId=${currentDocId} paused=${viewerAudio?.paused}`);
+
+        // 再生中の同じボタン → 停止
         if(currentDocId === id && viewerAudio && !viewerAudio.paused){
-          stopAudio();
+          stopAudio("user-stop");
           return;
         }
 
-        stopAudio();
+        stopAudio("before-new");
 
         document.getElementById("pdfViewer").src = `docs/${id}.pdf`;
 
         try{
           await loadAndPlayAudio(id, row, btn);
           currentDocId = id;
-        }catch{
-          stopAudio();
+        }catch(e){
+          dbg(`loadAndPlayAudio threw: ${e.message}`);
+          stopAudio("catch");
         }
-};
+      };
 
       top.appendChild(num);
       top.appendChild(btn);
@@ -460,7 +485,7 @@ function render(data){
 // ===== 閉じる =====
 document.getElementById("closePdf").onclick=()=>{
   document.getElementById("pdfViewer").src="";
-  stopAudio();
+  stopAudio("closePdf");
 };
 
 // ===== 起動 =====
@@ -468,18 +493,15 @@ db.ref("reservations").on("value",snap=>{
   render(snap.val());
 });
 
-// ===== 離脱停止（ここに追加） =====
-
+// ===== 離脱停止 =====
 document.addEventListener("visibilitychange",()=>{
-  if(document.visibilityState==="hidden"){
-    stopAudio();
-  }
+  dbg(`visibilitychange: ${document.visibilityState}`);
+  if(document.visibilityState==="hidden") stopAudio("visibility-hidden");
 });
 
-window.addEventListener("pagehide", stopAudio);
-window.addEventListener("blur", stopAudio);
-window.addEventListener("beforeunload", stopAudio);
-
+window.addEventListener("pagehide",    () => stopAudio("pagehide"));
+window.addEventListener("blur",        () => { dbg("window blur"); stopAudio("blur"); });
+window.addEventListener("beforeunload",() => stopAudio("beforeunload"));
 
 </script>
 
