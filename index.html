@@ -43,9 +43,7 @@ h1{
   box-shadow:0 2px 6px rgba(0,0,0,0.08);
 }
 
-.remain{
-  margin:6px 0 10px;
-}
+.remain{ margin:6px 0 10px; }
 
 .row{
   display:flex;
@@ -148,10 +146,14 @@ firebase.initializeApp({
 const db = firebase.database();
 
 // ===== 状態 =====
-let viewerAudio = null;
+let viewerAudio  = null;
 let currentDocId = null;
 let currentRow   = null;
 let currentBtn   = null;
+
+// play()成功時刻。この直後の visibilitychange:hidden / blur は誤発火として無視する
+let lastPlayedAt = 0;
+const PLAY_GUARD_MS = 1000; // play()後1秒以内のhidden/blurは無視
 
 // ===== 停止 =====
 function stopAudio(){
@@ -175,6 +177,13 @@ function stopAudio(){
   currentDocId = null;
 }
 
+// ===== 離脱時停止（誤発火ガード付き）=====
+function stopIfSafe(reason){
+  // play()直後の一定時間はAndroid誤発火とみなして無視
+  if(Date.now() - lastPlayedAt < PLAY_GUARD_MS) return;
+  stopAudio();
+}
+
 // ===== 音声再生 =====
 async function loadAndPlayAudio(id, row, btn){
 
@@ -194,17 +203,19 @@ async function loadAndPlayAudio(id, row, btn){
 
       await audio.play();
 
+      // 再生成功時刻を記録（ここより後の誤発火をガード）
+      lastPlayedAt = Date.now();
+
       document.querySelectorAll(".row.playing")
         .forEach(r => r.classList.remove("playing"));
       row.classList.add("playing");
       currentRow = row;
       currentBtn = btn;
 
-      return; // 成功
+      return;
     }catch(e){
       if(viewerAudio){ viewerAudio.onerror = null; }
       viewerAudio = null;
-      // 次のフォーマットへ
     }
   }
 
@@ -315,7 +326,6 @@ function render(data){
       btn.textContent="▶";
 
       btn.onclick = async ()=>{
-        // 同じ曲が再生中 → 停止
         if(currentDocId===id && viewerAudio && !viewerAudio.paused){
           stopAudio();
           return;
@@ -366,9 +376,13 @@ document.getElementById("closePdf").onclick=()=>{
 // ===== 起動 =====
 db.ref("reservations").on("value", snap=>{ render(snap.val()); });
 
-// ===== ページ離脱時のみ停止 =====
-// ※ visibilitychange / blur はAndroidの通常タップでも誤発火するため削除
-window.addEventListener("pagehide", stopAudio);
+// ===== 離脱時停止（ガード付き）=====
+document.addEventListener("visibilitychange",()=>{
+  if(document.visibilityState==="hidden") stopIfSafe("visibility-hidden");
+});
+window.addEventListener("pagehide",     () => stopIfSafe("pagehide"));
+window.addEventListener("beforeunload", () => stopIfSafe("beforeunload"));
+// blur はAndroidで誤発火が多すぎるため引き続き除外
 
 </script>
 </body>
