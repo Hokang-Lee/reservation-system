@@ -252,42 +252,43 @@ async function loadAndPlayAudio(id, row, btn){
 
       const audio = new Audio(url);
 
-      await new Promise((resolve, reject)=>{
-        audio.oncanplaythrough = resolve;
-        audio.onerror = reject;
-      });
+      // Android autoplay対策:
+      // canplaythroughを待つと「ユーザー操作の同期コンテキスト」を外れ
+      // Androidのautoplayポリシーで再生がブロックされる。
+      // play()を即座に呼んでPromiseを待つだけにする。
+      // ネットワーク遅延中でもブラウザが再生権限を保持している間に
+      // play()が呼ばれるため、バッファリングしながら再生が始まる。
+
+      audio.onplay   = () => { btn.textContent = "⏸"; };
+      audio.onpause  = () => { btn.textContent = "▶"; };
+      audio.onended  = stopAudio;
+
+      // onerrorはPromiseとは別に非同期で発火する場合があるため
+      // load失敗（404等）はplay()のrejectで捕捉する
+      audio.onerror = null;
 
       viewerAudio = audio;
 
-      // ✅ ★ここ変える（currentBtn使わない）
-      audio.onplay = ()=>{
-        btn.textContent = "⏸";
-      };
-
-      audio.onpause = ()=>{
-        btn.textContent = "▶";
-      };
-
-      audio.onended = stopAudio;
-
+      // play()をawaitすることでAndroidの再生権限チェックを通過させる
       await audio.play();
 
-      // ✅ 念押し（Android対策）
+      // play()が解決した時点で再生開始確定
       btn.textContent = "⏸";
 
-      if(currentRow) currentRow.classList.remove("playing");
-
-      // ✅ 先に全部消す（これが決定打）
       document.querySelectorAll(".row.playing")
         .forEach(r => r.classList.remove("playing"));
 
       row.classList.add("playing");
-
       currentRow = row;
 
       return;
 
-    }catch{}
+    }catch(e){
+      // play()がrejectされた場合（ファイルなし or autoplay拒否）
+      // viewerAudioをnullに戻して次のフォーマットへ
+      if(viewerAudio) { viewerAudio.onerror = null; }
+      viewerAudio = null;
+    }
   }
 
   throw new Error("音声なし");
