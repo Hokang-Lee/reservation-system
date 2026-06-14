@@ -244,9 +244,6 @@ function render(data){
         if(currentDocId===id && viewerAudio && !viewerAudio.paused){
           stopAudio(); return;
         }
-        // PDFを別タブで開く（ユーザー操作の文脈を保つため一番最初・同期的に実行）
-        window.open(`docs/${id}.pdf`, "_blank");
-
         stopAudio();
         try{
           await loadAndPlayAudio(id, row, btn);
@@ -254,6 +251,10 @@ function render(data){
         }catch{
           stopAudio();
         }
+        // 音声再生(play())を試みた後にPDFタブを開く
+        // ※ window.open()を先に行うとiOSでaudio.play()が
+        //   ユーザー操作とみなされず音声が出なくなるため
+        window.open(`docs/${id}.pdf`, "_blank");
       };
 
       top.appendChild(num); top.appendChild(btn);
