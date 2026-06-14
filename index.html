@@ -82,7 +82,9 @@ let currentDocId = null;
 let currentRow   = null;
 let currentBtn   = null;
 let lastPlayedAt = 0;
-const GUARD_MS   = 2000;
+
+// iOSはPDF iframeロードでhiddenが遅れて来るため3000msに設定
+const GUARD_MS = 3000;
 
 // ===== 停止 =====
 function stopAudio(){
@@ -106,38 +108,52 @@ function stopIfSafe(){
 }
 
 // ===== 音声再生 =====
-// forループ廃止。m4a→失敗時のみaacを順番に試す直列処理。
-// play()が成功した瞬間に即returnし、後続処理が一切走らないことを保証する。
-async function tryPlay(url){
-  // 指定URLのAudioオブジェクトを作りplay()を呼ぶ。
-  // 成功→Audioオブジェクトを返す。失敗→nullを返す。
-  return new Promise(resolve=>{
-    const audio = new Audio(url);
-    // onerrorはplay()のrejectより先に来る場合があるため両方ハンドル
-    audio.onerror = ()=>{ resolve(null); };
-    audio.play()
-      .then(()=>{ audio.onerror=null; resolve(audio); })
-      .catch(()=>{ resolve(null); });
-  });
-}
-
+//
+// 設計方針：
+//   iOS Safari / Android Chrome 両対応のために
+//   play() を async関数の中で直接 await する。
+//   new Promise ラップは使わない
+//   （iOSはPromiseコンストラクタ経由だとautoplayコンテキストが
+//     切れる場合がある）。
+//
+//   m4a → aac の順で試すが、それぞれ完全に独立した
+//   try/catch ブロックにし、forループは使わない。
+//   →「m4aのplay()が成功してもaacのコードが走る」競合を排除。
+//
 async function loadAndPlayAudio(id, row, btn){
-  // m4a → aac の順で試す（直列・forループなし）
-  let audio = await tryPlay(`audio/${id}.m4a`);
-  if(!audio) audio = await tryPlay(`audio/${id}.aac`);
+
+  let audio = null;
+
+  // --- m4a を試す ---
+  try{
+    const a = new Audio(`audio/${id}.m4a`);
+    await a.play();   // ← タップコンテキストを保ったまま直接await
+    audio = a;
+  }catch(_){}
+
+  // --- m4a が失敗した場合のみ aac を試す ---
+  if(!audio){
+    try{
+      const a = new Audio(`audio/${id}.aac`);
+      await a.play();
+      audio = a;
+    }catch(_){}
+  }
+
   if(!audio) throw new Error("音声なし");
 
-  // ここに到達した時点で再生中のAudioが確定している
-  viewerAudio = audio;
+  // ここに来た時点で audio は再生中・確定済み
+  viewerAudio  = audio;
   lastPlayedAt = Date.now();
 
-  // イベント登録（play()成功後に設定するので誤発火しない）
-  audio.onplay  = ()=>{ btn.textContent="⏸"; };
+  // イベントはplay()成功確定後に登録（誤発火なし）
+  // onplay/onpause は既に再生中のためこの後は来ない可能性があるので
+  // ボタン状態はここで直接セットする
+  btn.textContent = "⏸";
   audio.onpause = ()=>{ if(viewerAudio===audio) btn.textContent="▶"; };
   audio.onended = ()=>{ if(viewerAudio===audio) stopAudio(); };
+  // onplay は登録しない（再生開始済みなので不要・誤動作の原因になる）
 
-  // ボタン・行の状態を確定
-  btn.textContent = "⏸";
   document.querySelectorAll(".row.playing").forEach(r=>r.classList.remove("playing"));
   row.classList.add("playing");
   currentRow = row;
@@ -232,6 +248,7 @@ function render(data){
       btn.className="play"; btn.textContent="▶";
 
       btn.onclick = async ()=>{
+        // 再生中の同じボタン → 停止
         if(currentDocId===id && viewerAudio && !viewerAudio.paused){
           stopAudio(); return;
         }
