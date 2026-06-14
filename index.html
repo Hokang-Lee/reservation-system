@@ -46,16 +46,6 @@ button:hover{ background:#d1d5db; }
 #viewer{ width:40%; height:100%; min-height:0; background:#111; position:relative; }
 #pdfViewer{ width:100%; height:100%; border:none; }
 #closePdf{ position:absolute; top:10px; right:10px; background:red; color:white; }
-
-/* デバッグ */
-#_dbg{
-  position:fixed; bottom:0; left:0; right:0;
-  background:rgba(0,0,0,0.88); color:#0f0;
-  font:11px/1.5 monospace; padding:6px 8px;
-  max-height:200px; overflow-y:auto;
-  white-space:pre; z-index:9999; pointer-events:none;
-}
-
 @media (max-width:768px){
   #viewer{ display:none; }
   h1{ width:110px; font-size:14px; }
@@ -74,7 +64,6 @@ button:hover{ background:#d1d5db; }
   <button id="closePdf">✖</button>
   <iframe id="pdfViewer"></iframe>
 </div>
-<div id="_dbg"></div>
 
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
@@ -87,27 +76,16 @@ firebase.initializeApp({
 });
 const db = firebase.database();
 
-// ===== デバッグ =====
-const _lines = [];
-function dbg(msg){
-  const t = new Date().toISOString().slice(11,23);
-  _lines.unshift(`[${t}] ${msg}`);
-  if(_lines.length > 60) _lines.pop();
-  const el = document.getElementById("_dbg");
-  if(el) el.textContent = _lines.join("\n");
-}
-
 // ===== 状態 =====
 let viewerAudio  = null;
 let currentDocId = null;
 let currentRow   = null;
 let currentBtn   = null;
 let lastPlayedAt = 0;
-const GUARD_MS   = 1000;
+const GUARD_MS   = 2000;
 
 // ===== 停止 =====
-function stopAudio(reason=""){
-  dbg(`stopAudio(${reason}) audio=${!!viewerAudio} btn=${currentBtn?.textContent}`);
+function stopAudio(){
   if(viewerAudio){
     viewerAudio.onplay  = null;
     viewerAudio.onpause = null;
@@ -122,45 +100,48 @@ function stopAudio(reason=""){
   currentBtn=null; currentRow=null; currentDocId=null;
 }
 
-function stopIfSafe(reason){
-  const age = Date.now() - lastPlayedAt;
-  dbg(`stopIfSafe(${reason}) age=${age}ms guard=${GUARD_MS}ms → ${age<GUARD_MS?"SKIP":"STOP"}`);
-  if(age < GUARD_MS) return;
-  stopAudio(reason);
+function stopIfSafe(){
+  if(Date.now() - lastPlayedAt < GUARD_MS) return;
+  stopAudio();
 }
 
 // ===== 音声再生 =====
+// forループ廃止。m4a→失敗時のみaacを順番に試す直列処理。
+// play()が成功した瞬間に即returnし、後続処理が一切走らないことを保証する。
+async function tryPlay(url){
+  // 指定URLのAudioオブジェクトを作りplay()を呼ぶ。
+  // 成功→Audioオブジェクトを返す。失敗→nullを返す。
+  return new Promise(resolve=>{
+    const audio = new Audio(url);
+    // onerrorはplay()のrejectより先に来る場合があるため両方ハンドル
+    audio.onerror = ()=>{ resolve(null); };
+    audio.play()
+      .then(()=>{ audio.onerror=null; resolve(audio); })
+      .catch(()=>{ resolve(null); });
+  });
+}
+
 async function loadAndPlayAudio(id, row, btn){
-  const formats = ["m4a","aac"];
-  for(const ext of formats){
-    const url = `audio/${id}.${ext}`;
-    dbg(`try ${url}`);
-    try{
-      const audio = new Audio(url);
+  // m4a → aac の順で試す（直列・forループなし）
+  let audio = await tryPlay(`audio/${id}.m4a`);
+  if(!audio) audio = await tryPlay(`audio/${id}.aac`);
+  if(!audio) throw new Error("音声なし");
 
-      audio.onplay  = () => { dbg(`onplay  id=${id} btn=${btn.textContent}`); btn.textContent="⏸"; };
-      audio.onpause = () => { dbg(`onpause id=${id} audio=${!!viewerAudio}`); if(viewerAudio) btn.textContent="▶"; };
-      audio.onended = () => { dbg(`onended id=${id}`); stopAudio("ended"); };
-      audio.onerror = () => { dbg(`onerror code=${audio.error?.code}`); };
+  // ここに到達した時点で再生中のAudioが確定している
+  viewerAudio = audio;
+  lastPlayedAt = Date.now();
 
-      viewerAudio = audio;
-      dbg(`play() calling...`);
-      await audio.play();
-      lastPlayedAt = Date.now();
-      dbg(`play() OK lastPlayedAt=${lastPlayedAt}`);
+  // イベント登録（play()成功後に設定するので誤発火しない）
+  audio.onplay  = ()=>{ btn.textContent="⏸"; };
+  audio.onpause = ()=>{ if(viewerAudio===audio) btn.textContent="▶"; };
+  audio.onended = ()=>{ if(viewerAudio===audio) stopAudio(); };
 
-      document.querySelectorAll(".row.playing").forEach(r=>r.classList.remove("playing"));
-      row.classList.add("playing");
-      currentRow = row;
-      currentBtn = btn;
-      return;
-    }catch(e){
-      dbg(`play() rejected: ${e.name}: ${e.message}`);
-      if(viewerAudio){ viewerAudio.onerror=null; }
-      viewerAudio = null;
-    }
-  }
-  throw new Error("音声なし");
+  // ボタン・行の状態を確定
+  btn.textContent = "⏸";
+  document.querySelectorAll(".row.playing").forEach(r=>r.classList.remove("playing"));
+  row.classList.add("playing");
+  currentRow = row;
+  currentBtn = btn;
 }
 
 // ===== ユーティリティ =====
@@ -251,19 +232,16 @@ function render(data){
       btn.className="play"; btn.textContent="▶";
 
       btn.onclick = async ()=>{
-        dbg(`=== TAP id=${id} currentDocId=${currentDocId} paused=${viewerAudio?.paused} btn=${btn.textContent}`);
         if(currentDocId===id && viewerAudio && !viewerAudio.paused){
-          stopAudio("user-stop"); return;
+          stopAudio(); return;
         }
-        stopAudio("before-new");
+        stopAudio();
         document.getElementById("pdfViewer").src=`docs/${id}.pdf`;
         try{
           await loadAndPlayAudio(id, row, btn);
           currentDocId=id;
-          dbg(`currentDocId set to ${id}`);
-        }catch(e){
-          dbg(`catch: ${e.message}`);
-          stopAudio("catch");
+        }catch{
+          stopAudio();
         }
       };
 
@@ -287,17 +265,16 @@ function render(data){
 
 document.getElementById("closePdf").onclick=()=>{
   document.getElementById("pdfViewer").src="";
-  stopAudio("closePdf");
+  stopAudio();
 };
 
 db.ref("reservations").on("value", snap=>{ render(snap.val()); });
 
 document.addEventListener("visibilitychange",()=>{
-  dbg(`visibility: ${document.visibilityState}`);
-  if(document.visibilityState==="hidden") stopIfSafe("vis-hidden");
+  if(document.visibilityState==="hidden") stopIfSafe();
 });
-window.addEventListener("pagehide",     ()=>stopIfSafe("pagehide"));
-window.addEventListener("beforeunload", ()=>stopIfSafe("beforeunload"));
+window.addEventListener("pagehide",     stopIfSafe);
+window.addEventListener("beforeunload", stopIfSafe);
 </script>
 </body>
 </html>
