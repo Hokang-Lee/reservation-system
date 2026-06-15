@@ -306,11 +306,16 @@ function render(data){
       };
 
       // ✅ PDFボタン（音声と独立 → ポップアップブロック対策）
+      // 別タブを開くと Android で visibilitychange(hidden) が発火し
+      // stopIfSafe() に音声を止められるため、lastPlayedAt を更新して防ぐ
       const pdfBtn = document.createElement("button");
       pdfBtn.className = "play";
       pdfBtn.textContent = "📄";
       pdfBtn.title = "PDFを開く";
-      pdfBtn.onclick = () => window.open(`docs/${id}.pdf`, "_blank");
+      pdfBtn.onclick = () => {
+        lastPlayedAt = Date.now();
+        window.open(`docs/${id}.pdf`, "_blank");
+      };
 
       top.appendChild(num);
       top.appendChild(btn);
