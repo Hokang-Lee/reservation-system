@@ -200,78 +200,149 @@ const dates=generateDates();
 const SEAT=5;
 
 function render(data){
-  const app=document.getElementById("app");
-  app.innerHTML="";
-  dates.forEach(date=>{
-    const start=getStart(date);
-    if(start===null) return;
-    const d=new Date(date); const day=d.getDay();
-    const title=document.createElement("div");
-    title.className="title";
-    title.innerHTML=`■ 読み手（${date} ${day===0?"日":"月"}）`;
-    if(day===0){title.style.color="red";title.style.background="#ffeaea";}
-    else{title.style.background="#f0f0f0";}
+
+  const app = document.getElementById("app");
+  app.innerHTML = "";
+
+  const today = new Date();
+  today.setHours(0,0,0,0);
+
+  dates.forEach(date => {
+
+    const start = getStart(date);
+    if(start === null) return;
+
+    const d = new Date(date);
+    d.setHours(0,0,0,0);
+
+    const day = d.getDay();
+    const isPast = d < today;
+
+    // ===== タイトル =====
+    const title = document.createElement("div");
+    title.className = "title";
+    title.innerHTML = `■ 読み手（${date} ${day===0?"日":"月"}）`;
+
+    if(day===0){
+      title.style.color = "red";
+      title.style.background = "#ffeaea";
+    } else {
+      title.style.background = "#f0f0f0";
+    }
+
+    // ✅ 過去は薄く
+    if(isPast){
+      title.style.opacity = 0.5;
+    }
+
     app.appendChild(title);
 
-    let used=0;
-    for(let i=0;i<SEAT;i++) if(data?.[date]?.[start+i]) used++;
-    const remain=SEAT-used;
-    const remainDiv=document.createElement("div");
-    remainDiv.className="remain";
-    remainDiv.innerHTML=remain===0
-      ?"<b style='color:#3399ff;'>🔵 満席</b>"
-      :`<b style='color:green;'>🟢 空き：あと${remain}席</b>`;
+    // ===== 空き状況 =====
+    let used = 0;
+    for(let i=0;i<SEAT;i++){
+      if(data?.[date]?.[start+i]) used++;
+    }
+
+    const remain = SEAT - used;
+
+    const remainDiv = document.createElement("div");
+    remainDiv.className = "remain";
+    remainDiv.innerHTML =
+      remain===0
+      ? "<b style='color:#3399ff;'>🔵 満席</b>"
+      : `<b style='color:green;'>🟢 空き：あと${remain}席</b>`;
+
+    if(isPast){
+      remainDiv.style.opacity = 0.5;
+    }
+
     app.appendChild(remainDiv);
 
+    // ===== 行 =====
     for(let i=0;i<SEAT;i++){
-      const seat=start+i;
-      const id=formatSeat(seat);
-      const name=data?.[date]?.[seat]||"";
-      const row=document.createElement("div");
-      row.className="row";
-      row.classList.add(name?"filled-row":"empty-row");
 
-      const top=document.createElement("div");
-      top.className="row-top";
-      const num=document.createElement("div");
-      num.className="seat"; num.textContent=seat;
+      const seat = start + i;
+      const id = formatSeat(seat);
 
-      const btn=document.createElement("button");
-      btn.className="play"; btn.textContent="▶";
+      const name = data?.[date]?.[seat] || "";
 
-      btn.onclick = async ()=>{
-        // 再生中の同じボタン → 停止
-        if(currentDocId===id && viewerAudio && !viewerAudio.paused){
-          stopAudio(); return;
+      const row = document.createElement("div");
+      row.className = "row";
+      row.classList.add(name ? "filled-row" : "empty-row");
+
+      // ✅ 過去は視覚的に区別
+      if(isPast){
+        row.style.opacity = 0.5;
+      }
+
+      // ===== 上段 =====
+      const top = document.createElement("div");
+      top.className = "row-top";
+
+      const num = document.createElement("div");
+      num.className = "seat";
+      num.textContent = seat;
+
+      const btn = document.createElement("button");
+      btn.className = "play";
+      btn.textContent = "▶";
+
+      btn.onclick = async () => {
+
+        // ✅ 同じ再生 → 停止
+        if(currentDocId === id && viewerAudio && !viewerAudio.paused){
+          stopAudio();
+          return;
         }
+
         stopAudio();
+
         try{
           await loadAndPlayAudio(id, row, btn);
-          currentDocId=id;
+          currentDocId = id;
         }catch{
           stopAudio();
         }
-        // 音声再生(play())を試みた後にPDFタブを開く
-        // ※ window.open()を先に行うとiOSでaudio.play()が
-        //   ユーザー操作とみなされず音声が出なくなるため
+
+        // ✅ iPhone対策（音声の後にPDF）
         window.open(`docs/${id}.pdf`, "_blank");
       };
 
-      top.appendChild(num); top.appendChild(btn);
-      const label=document.createElement("div");
-      label.className="label";
-      label.innerHTML=name?`<b>${name}</b>`:"空き";
-      const edit=document.createElement("button");
-      edit.className="edit"; edit.textContent=name?"編集":"予約";
-      edit.onclick=()=>{
-        const input=prompt("名前入力",name);
-        if(input===null) return;
-        const ref=db.ref(`reservations/${date}/${seat}`);
-        input.trim()===""?ref.remove():ref.set(input.trim());
+      top.appendChild(num);
+      top.appendChild(btn);
+
+      // ===== 名前 =====
+      const label = document.createElement("div");
+      label.className = "label";
+      label.innerHTML = name ? `<b>${name}</b>` : "空き";
+
+      // ===== 予約ボタン =====
+      const edit = document.createElement("button");
+      edit.className = "edit";
+      edit.textContent = name ? "編集" : "予約";
+
+      // ✅ 過去の日は編集禁止
+      edit.onclick = () => {
+
+        if(isPast){
+          alert("過去の予約は変更できません");
+          return;
+        }
+
+        const input = prompt("名前入力", name);
+        if(input === null) return;
+
+        const ref = db.ref(`reservations/${date}/${seat}`);
+        input.trim()==="" ? ref.remove() : ref.set(input.trim());
       };
-      row.appendChild(top); row.appendChild(label); row.appendChild(edit);
+
+      row.appendChild(top);
+      row.appendChild(label);
+      row.appendChild(edit);
+
       app.appendChild(row);
     }
+
   });
 }
 
