@@ -74,12 +74,14 @@ let currentDocId = null;
 let currentRow   = null;
 let currentBtn   = null;
 let lastPlayedAt = 0;
+let userStopped  = false;  // ユーザーが意図して停止したかどうか
 
 // PDFを別タブで開いた際やiOSで一瞬hiddenになることがあるため3000msに設定
 const GUARD_MS = 3000;
 
 // ===== 停止 =====
-function stopAudio(){
+function stopAudio(intentional = true){
+  userStopped = intentional;
   if(viewerAudio){
     viewerAudio.onplay  = null;
     viewerAudio.onpause = null;
@@ -96,8 +98,20 @@ function stopAudio(){
 
 function stopIfSafe(){
   if(Date.now() - lastPlayedAt < GUARD_MS) return;
-  stopAudio();
+  stopAudio(true);
 }
+
+// ===== visibilitychange で戻った時に自動再開 =====
+document.addEventListener("visibilitychange", ()=>{
+  if(document.visibilityState === "hidden"){
+    stopIfSafe();
+  } else {
+    // タブ/アプリに戻った時、ユーザーが止めていなければ再開
+    if(!userStopped && viewerAudio && viewerAudio.paused){
+      viewerAudio.play().catch(()=>{});
+    }
+  }
+});
 
 // ===== 音声再生 =====
 //
@@ -142,8 +156,21 @@ async function loadAndPlayAudio(id, row, btn){
   // onplay/onpause は既に再生中のためこの後は来ない可能性があるので
   // ボタン状態はここで直接セットする
   btn.textContent = "⏸";
-  audio.onpause = ()=>{ if(viewerAudio===audio) btn.textContent="▶"; };
-  audio.onended = ()=>{ if(viewerAudio===audio) stopAudio(); };
+  // onpause：ユーザーが止めた場合はボタン更新、省電力等による強制停止は自動再開
+  audio.onpause = ()=>{
+    if(viewerAudio !== audio) return;
+    if(userStopped){
+      btn.textContent = "▶";
+    } else {
+      // 意図しない停止（Android省電力・バックグラウンド制限）→ 自動再開
+      setTimeout(()=>{
+        if(viewerAudio === audio && audio.paused && !userStopped){
+          audio.play().catch(()=>{ btn.textContent = "▶"; });
+        }
+      }, 300);
+    }
+  };
+  audio.onended = ()=>{ if(viewerAudio===audio) stopAudio(true); };
   // onplay は登録しない（再生開始済みなので不要・誤動作の原因になる）
 
   document.querySelectorAll(".row.playing").forEach(r=>r.classList.remove("playing"));
@@ -289,25 +316,25 @@ function render(data){
 
       btn.onclick = async () => {
 
-        // ✅ 同じ再生 → 停止
+        // ✅ 同じ再生 → ユーザーが意図して停止
         if(currentDocId === id && viewerAudio && !viewerAudio.paused){
-          stopAudio();
+          stopAudio(true);
           return;
         }
 
-        stopAudio();
+        stopAudio(true);
 
         try{
           await loadAndPlayAudio(id, row, btn);
           currentDocId = id;
         }catch{
-          stopAudio();
+          stopAudio(true);
         }
       };
 
-      // ✅ PDFボタン（音声と独立 → ポップアップブロック対策）
-      // 別タブを開くと Android で visibilitychange(hidden) が発火し
-      // stopIfSafe() に音声を止められるため、lastPlayedAt を更新して防ぐ
+      // ✅ PDFボタン（音声と独立）
+      // 別タブを開くと Android で visibilitychange(hidden) が発火するため
+      // lastPlayedAt を更新してガードし、音声を止めない
       const pdfBtn = document.createElement("button");
       pdfBtn.className = "play";
       pdfBtn.textContent = "📄";
@@ -358,9 +385,6 @@ function render(data){
 
 db.ref("reservations").on("value", snap=>{ render(snap.val()); });
 
-document.addEventListener("visibilitychange",()=>{
-  if(document.visibilityState==="hidden") stopIfSafe();
-});
 window.addEventListener("pagehide",     stopIfSafe);
 window.addEventListener("beforeunload", stopIfSafe);
 </script>
