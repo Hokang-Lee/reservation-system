@@ -417,6 +417,16 @@ function render(data){
       num.className = "seat";
       num.textContent = seat;
 
+      // ===== シークバー（btn.onclickより前に生成） =====
+      const seekWrap = document.createElement("div");
+      seekWrap.className = "seekbar-wrap";
+      seekWrap.innerHTML =
+        `<div class="seekbar-time">` +
+          `<span class="seek-cur">0:00</span>` +
+          `<span class="seek-dur">0:00</span>` +
+        `</div>` +
+        `<input class="seekbar" type="range" min="0" max="100" step="0.1" value="0">`;
+
       const btn = document.createElement("button");
       btn.className = "play";
       btn.textContent = "▶";
@@ -498,15 +508,6 @@ function render(data){
       row.appendChild(label);
       row.appendChild(edit);
 
-      // ===== シークバー =====
-      const seekWrap = document.createElement("div");
-      seekWrap.className = "seekbar-wrap";
-      seekWrap.innerHTML =
-        `<div class="seekbar-time">` +
-          `<span class="seek-cur">0:00</span>` +
-          `<span class="seek-dur">0:00</span>` +
-        `</div>` +
-        `<input class="seekbar" type="range" min="0" max="100" step="0.1" value="0">`;
       row.appendChild(seekWrap);
 
       app.appendChild(row);
