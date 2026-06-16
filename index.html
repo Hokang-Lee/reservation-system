@@ -179,33 +179,40 @@ function updateSeekbarFill(sb, pct){
 }
 
 // ===== 音声再生 =====
-async function loadAndPlayAudio(id, row, btn, seekWrap){
+async function tryPlay(src){
+  const a = new Audio();
+  a.preload = "auto";
+  a.src = src;
+  a.playsInline = true;
+  a.load();
+  await a.play();
+  return a;
+}
 
+async function loadAndPlayAudio(id, row, btn, seekWrap){
   let audio = null;
 
+  // 古いiPhone対策で mp3 を最優先
   try{
-    const a = new Audio(`audio/${id}.m4a`);
-    await a.play();
-    audio = a;
+    audio = await tryPlay(`audio/${id}.mp3`);
   }catch(_){}
 
   if(!audio){
     try{
-      const a = new Audio(`audio/${id}.aac`);
-      await a.play();
-      audio = a;
+      audio = await tryPlay(`audio/${id}.m4a`);
     }catch(_){}
   }
 
   if(!audio){
     try{
-      const a = new Audio(`audio/${id}.mp3`);
-      await a.play();
-      audio = a;
+      audio = await tryPlay(`audio/${id}.aac`);
     }catch(_){}
   }
 
-  if(!audio) throw new Error("音声なし");
+  if(!audio){
+    alert("音声を再生できませんでした。iPhoneの消音モード解除、音量確認、再読み込みをお試しください。");
+    throw new Error("音声なし");
+  }
 
   viewerAudio = audio;
   userStopped = false;
