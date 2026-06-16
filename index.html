@@ -9,168 +9,73 @@
 html, body { height:100%; }
 body{
   font-family:"Segoe UI","Noto Sans JP",sans-serif;
-  margin:0;
-  display:flex;
-  height:100vh;
-  background:#f5f7fb;
+  margin:0; display:flex; height:100vh; background:#f5f7fb;
 }
 h1{
-  width:200px;
-  margin:0;
+  width:200px; margin:0;
   background:linear-gradient(180deg,#2563eb,#1e40af);
-  color:white;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  text-align:center;
-  line-height:1.4;
+  color:white; display:flex; align-items:center;
+  justify-content:center; text-align:center; line-height:1.4;
 }
-#app{
-  flex:1;
-  overflow-y:auto;
-  padding:24px;
-}
+#app{ flex:1; overflow-y:auto; padding:24px; }
 .title{
-  font-weight:bold;
-  padding:12px 16px;
-  margin-top:28px;
-  border-radius:10px;
-  background:#fff;
+  font-weight:bold; padding:12px 16px; margin-top:28px;
+  border-radius:10px; background:#fff;
   box-shadow:0 2px 6px rgba(0,0,0,0.08);
 }
-.remain{
-  margin:6px 0 10px;
-}
+.remain{ margin:6px 0 10px; }
 .row{
-  display:flex;
-  align-items:center;
-  gap:12px;
-  padding:12px 14px;
-  border-radius:10px;
-  margin-bottom:8px;
-  background:white;
-  box-shadow:0 1px 4px rgba(0,0,0,0.06);
-  transition:.2s;
+  display:flex; align-items:center; gap:12px;
+  padding:12px 14px; border-radius:10px; margin-bottom:8px;
+  background:white; box-shadow:0 1px 4px rgba(0,0,0,0.06); transition:.2s;
 }
-.row:hover{
-  transform:translateY(-2px);
-}
-.row-top{
-  display:flex;
-  align-items:center;
-  gap:8px;
-  width:210px;
-}
-.row-top .seat{
-  width:55px;
-  font-weight:bold;
-}
-.row-top .play{
-  width:45px;
-  text-align:center;
-}
-.label{
-  flex:1;
-  font-size:15px;
-}
-.edit{
-  width:70px;
-  text-align:center;
-}
-.empty-row{
-  border-left:6px solid #22c55e;
-}
-.filled-row{
-  border-left:6px solid #2563eb;
-}
-.playing{
-  outline:3px solid #f59e0b;
-  background:#fff7ed;
-}
+.row:hover{ transform:translateY(-2px); }
+.row-top{ display:flex; align-items:center; gap:8px; width:210px; }
+.row-top .seat{ width:55px; font-weight:bold; }
+.row-top .play{ width:45px; text-align:center; }
+.label{ flex:1; font-size:15px; }
+.edit{ width:70px; text-align:center; }
+.empty-row{ border-left:6px solid #22c55e; }
+.filled-row{ border-left:6px solid #2563eb; }
+.playing{ outline:3px solid #f59e0b; background:#fff7ed; }
 
 /* ===== シークバー ===== */
 .seekbar-wrap{
-  display:none;
-  width:100%;
-  padding:6px 0 2px;
-  box-sizing:border-box;
+  display:none; width:100%; padding:6px 0 2px; box-sizing:border-box;
 }
-.playing .seekbar-wrap{
-  display:block;
-}
+.playing .seekbar-wrap{ display:block; }
 .seekbar-time{
-  display:flex;
-  justify-content:space-between;
-  font-size:11px;
-  color:#888;
-  margin-bottom:2px;
+  display:flex; justify-content:space-between;
+  font-size:11px; color:#888; margin-bottom:2px;
 }
 .seekbar{
-  -webkit-appearance:none;
-  appearance:none;
-  width:100%;
-  height:6px;
-  border-radius:3px;
-  outline:none;
-  cursor:pointer;
-  background:linear-gradient(to right, #f59e0b 0%, #e5e7eb 0%);
+  -webkit-appearance:none; appearance:none;
+  width:100%; height:6px; border-radius:3px; outline:none; cursor:pointer;
+  background: linear-gradient(to right, #f59e0b 0%, #e5e7eb 0%);
 }
 .seekbar::-webkit-slider-thumb{
-  -webkit-appearance:none;
-  appearance:none;
-  width:18px;
-  height:18px;
-  border-radius:50%;
-  background:#f59e0b;
-  cursor:pointer;
-  border:2px solid #fff;
+  -webkit-appearance:none; appearance:none;
+  width:18px; height:18px; border-radius:50%;
+  background:#f59e0b; cursor:pointer; border:2px solid #fff;
   box-shadow:0 1px 3px rgba(0,0,0,0.3);
 }
 .seekbar::-moz-range-thumb{
-  width:18px;
-  height:18px;
-  border-radius:50%;
-  background:#f59e0b;
-  cursor:pointer;
-  border:2px solid #fff;
+  width:18px; height:18px; border-radius:50%;
+  background:#f59e0b; cursor:pointer; border:2px solid #fff;
   box-shadow:0 1px 3px rgba(0,0,0,0.3);
 }
-
 button{
-  border:none;
-  background:#e5e7eb;
-  padding:6px 10px;
-  border-radius:8px;
-  cursor:pointer;
-  transition:.2s;
+  border:none; background:#e5e7eb; padding:6px 10px;
+  border-radius:8px; cursor:pointer; transition:.2s;
 }
-button:hover{
-  background:#d1d5db;
-}
+button:hover{ background:#d1d5db; }
 
 @media (max-width:768px){
-  h1{
-    width:110px;
-    font-size:14px;
-  }
-  .row{
-    flex-direction:column;
-    align-items:stretch;
-    gap:6px;
-  }
-  .row-top{
-    width:auto;
-  }
-  .label{
-    width:100%;
-    font-size:16px;
-    font-weight:500;
-    word-break:break-word;
-  }
-  .edit{
-    width:auto;
-    align-self:flex-end;
-  }
+  h1{ width:110px; font-size:14px; }
+  .row{ flex-direction:column; align-items:stretch; gap:6px; }
+  .row-top{ width:auto; }
+  .label{ width:100%; font-size:16px; font-weight:500; word-break:break-word; }
+  .edit{ width:auto; align-self:flex-end; }
 }
 </style>
 </head>
@@ -198,12 +103,11 @@ let currentBtn   = null;
 let userStopped  = false;
 let seekTimer    = null;
 
-// PDF / 実ページを開いた直後だけ停止抑止
-let suppressStopUntil = 0;
-const SUPPRESS_MS = 1500;
+// PDF/実ページを開いている間は停止抑止
+let suppressStopForPdf = false;
 
 function shouldSuppressStop(){
-  return Date.now() < suppressStopUntil;
+  return suppressStopForPdf;
 }
 
 // ===== 停止 =====
@@ -248,9 +152,17 @@ function stopIfSafe(){
 
 // ===== 画面離脱 =====
 document.addEventListener("visibilitychange", ()=>{
+  if(document.visibilityState === "visible"){
+    suppressStopForPdf = false;
+    return;
+  }
   if(document.visibilityState === "hidden"){
     stopIfSafe();
   }
+});
+
+window.addEventListener("focus", ()=>{
+  suppressStopForPdf = false;
 });
 
 window.addEventListener("pagehide", ()=>{
@@ -264,33 +176,28 @@ window.addEventListener("beforeunload", ()=>{
 // ===== シークバー補助 =====
 function fmt(sec){
   if(!isFinite(sec)) return "0:00";
-  const m = Math.floor(sec / 60);
-  const s = String(Math.floor(sec % 60)).padStart(2, "0");
+  const m = Math.floor(sec/60);
+  const s = String(Math.floor(sec%60)).padStart(2,"0");
   return `${m}:${s}`;
 }
-
 function updateSeekbarFill(sb, pct){
   sb.style.background =
     `linear-gradient(to right,#f59e0b ${pct}%,#e5e7eb ${pct}%)`;
 }
 
-// ===== 古いiPhone対策つき音声生成 =====
+// ===== 古いiPhone対策つき音声再生 =====
 async function tryPlay(src){
   const a = new Audio();
   a.preload = "auto";
   a.src = src;
-
-  // 古いiPhone向けの補助
   a.playsInline = true;
-  a.setAttribute("playsinline", "true");
-  a.setAttribute("webkit-playsinline", "true");
-
+  a.setAttribute("playsinline", "");
+  a.setAttribute("webkit-playsinline", "");
   a.load();
   await a.play();
   return a;
 }
 
-// ===== 音声再生 =====
 async function loadAndPlayAudio(id, row, btn, seekWrap){
   let audio = null;
 
@@ -315,7 +222,6 @@ async function loadAndPlayAudio(id, row, btn, seekWrap){
     alert("音声を再生できませんでした。iPhoneの消音モード解除、音量確認、再読み込みをお試しください。");
     throw new Error("音声なし");
   }
-
   viewerAudio = audio;
   userStopped = false;
 
@@ -381,17 +287,15 @@ async function loadAndPlayAudio(id, row, btn, seekWrap){
 }
 
 // ===== ユーティリティ =====
-function formatSeat(s){
-  return String(s).padStart(3, "0");
-}
+function formatSeat(s){ return String(s).padStart(3,"0"); }
 
 const config = {
   weekIncrement:35,
   anchors:[
-    {date:"2026-06-14", start:131, dow:0},
-    {date:"2026-06-15", start:136, dow:1},
-    {date:"2026-06-28", start:1,   dow:0},
-    {date:"2026-06-29", start:6,   dow:1}
+    {date:"2026-06-14",start:131,dow:0},
+    {date:"2026-06-15",start:136,dow:1},
+    {date:"2026-06-28",start:1,  dow:0},
+    {date:"2026-06-29",start:6,  dow:1}
   ],
   validUntil:"2026-08-03"
 };
@@ -407,30 +311,29 @@ function getStart(dateStr){
       d.setHours(0,0,0,0);
       return {...a, d};
     })
-    .filter(a=>a.dow === dow && a.d <= date)
-    .sort((a,b)=>b.d - a.d);
+    .filter(a=>a.dow===dow && a.d<=date)
+    .sort((a,b)=>b.d-a.d);
 
   if(!list.length) return null;
 
   const base = list[0];
-  return base.start + Math.floor((date - base.d) / (7 * 24 * 60 * 60 * 1000)) * config.weekIncrement;
+  return base.start + Math.floor((date - base.d) / (7*24*60*60*1000)) * config.weekIncrement;
 }
 
 function generateDates(){
   const result = [];
   const today = new Date();
   today.setHours(0,0,0,0);
-
   const end = new Date(config.validUntil);
-  for(let d = new Date("2026-01-01"); d <= end; d.setDate(d.getDate() + 1)){
+  for(let d = new Date("2026-01-01"); d <= end; d.setDate(d.getDate()+1)){
     d.setHours(0,0,0,0);
     if(d < today) continue;
 
     const day = d.getDay();
     if(day === 0 || day === 1){
       const y  = d.getFullYear();
-      const m  = String(d.getMonth() + 1).padStart(2, "0");
-      const da = String(d.getDate()).padStart(2, "0");
+      const m  = String(d.getMonth()+1).padStart(2,"0");
+      const da = String(d.getDate()).padStart(2,"0");
       result.push(`${y}-${m}-${da}`);
     }
   }
@@ -457,12 +360,11 @@ function render(data){
     const day = d.getDay();
     const isPast = d < today;
 
-    // ===== タイトル =====
     const title = document.createElement("div");
     title.className = "title";
-    title.innerHTML = `■ 読み手（${date} ${day === 0 ? "日" : "月"}）`;
+    title.innerHTML = `■ 読み手（${date} ${day===0?"日":"月"}）`;
 
-    if(day === 0){
+    if(day===0){
       title.style.color = "red";
       title.style.background = "#ffeaea";
     }else{
@@ -475,10 +377,9 @@ function render(data){
 
     app.appendChild(title);
 
-    // ===== 空き状況 =====
     let used = 0;
-    for(let i = 0; i < SEAT; i++){
-      if(data?.[date]?.[start + i]) used++;
+    for(let i=0;i<SEAT;i++){
+      if(data?.[date]?.[start+i]) used++;
     }
 
     const remain = SEAT - used;
@@ -486,15 +387,14 @@ function render(data){
     const remainDiv = document.createElement("div");
     remainDiv.className = "remain";
     remainDiv.innerHTML =
-      remain === 0
-        ? `<span style="color:red;font-weight:bold;">満席</span>`
-        : `残り <b>${remain}</b> 席`;
+      remain===0
+      ? `<span style="color:red;font-weight:bold;">満席</span>`
+      : `残り <b>${remain}</b> 席`;
 
     if(isPast) remainDiv.style.opacity = 0.5;
     app.appendChild(remainDiv);
 
-    // ===== 各席 =====
-    for(let i = 0; i < SEAT; i++){
+    for(let i=0;i<SEAT;i++){
       const seat = start + i;
       const id   = formatSeat(seat);
       const name = data?.[date]?.[seat] || "";
@@ -507,7 +407,6 @@ function render(data){
         row.style.opacity = 0.5;
       }
 
-      // ===== 上段 =====
       const top = document.createElement("div");
       top.className = "row-top";
 
@@ -515,7 +414,6 @@ function render(data){
       num.className = "seat";
       num.textContent = seat;
 
-      // ===== シークバー =====
       const seekWrap = document.createElement("div");
       seekWrap.className = "seekbar-wrap";
       seekWrap.innerHTML =
@@ -525,46 +423,43 @@ function render(data){
         `</div>` +
         `<input class="seekbar" type="range" min="0" max="100" step="0.1" value="0">`;
 
-      // ===== 再生ボタン =====
       const btn = document.createElement("button");
       btn.className = "play";
       btn.textContent = "▶";
 
       btn.onclick = async () => {
-        // 同じ音声を再生中なら停止
         if(currentDocId === id && viewerAudio && !viewerAudio.paused){
           stopAudio(true);
           return;
         }
-
         stopAudio(true);
 
         try{
           await loadAndPlayAudio(id, row, btn, seekWrap);
           currentDocId = id;
-        }catch(_){
+        }catch{
           stopAudio(true);
         }
       };
 
-      // ===== PDFボタン =====
       const pdfBtn = document.createElement("button");
       pdfBtn.className = "play";
       pdfBtn.textContent = "📄";
       pdfBtn.title = "PDFを開く";
       pdfBtn.onclick = () => {
-        suppressStopUntil = Date.now() + SUPPRESS_MS;
+        suppressStopForPdf = true;
+        userStopped = false;
         window.open(`docs/${id}.pdf`, "_blank");
       };
 
-      // ===== 実ページボタン =====
       const doc2Btn = document.createElement("button");
       doc2Btn.className = "play";
       doc2Btn.textContent = "実ページ";
       doc2Btn.title = "実ページを開く";
       doc2Btn.style.fontSize = "11px";
       doc2Btn.onclick = () => {
-        suppressStopUntil = Date.now() + SUPPRESS_MS;
+        suppressStopForPdf = true;
+        userStopped = false;
         window.open(`docs2/${id}.pdf`, "_blank");
       };
 
@@ -573,12 +468,10 @@ function render(data){
       top.appendChild(pdfBtn);
       top.appendChild(doc2Btn);
 
-      // ===== 名前 =====
       const label = document.createElement("div");
       label.className = "label";
       label.innerHTML = name ? `<b>${name}</b>` : "空き";
 
-      // ===== 予約ボタン =====
       const edit = document.createElement("button");
       edit.className = "edit";
       edit.textContent = name ? "編集" : "予約";
@@ -593,7 +486,7 @@ function render(data){
         if(input === null) return;
 
         const ref = db.ref(`reservations/${date}/${seat}`);
-        input.trim() === "" ? ref.remove() : ref.set(input.trim());
+        input.trim()==="" ? ref.remove() : ref.set(input.trim());
       };
 
       row.appendChild(top);
