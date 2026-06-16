@@ -38,6 +38,7 @@ h1{
 .empty-row{ border-left:6px solid #22c55e; }
 .filled-row{ border-left:6px solid #2563eb; }
 .playing{ outline:3px solid #f59e0b; background:#fff7ed; }
+
 /* ===== シークバー ===== */
 .seekbar-wrap{
   display:none; width:100%; padding:6px 0 2px; box-sizing:border-box;
@@ -68,6 +69,7 @@ button{
   border-radius:8px; cursor:pointer; transition:.2s;
 }
 button:hover{ background:#d1d5db; }
+
 @media (max-width:768px){
   h1{ width:110px; font-size:14px; }
   .row{ flex-direction:column; align-items:stretch; gap:6px; }
@@ -98,17 +100,23 @@ let viewerAudio  = null;
 let currentDocId = null;
 let currentRow   = null;
 let currentBtn   = null;
-let lastPlayedAt = 0;
-let userStopped  = false;  // ユーザーが意図して停止したかどうか
-let seekTimer    = null;   // シークバー更新タイマー
+let userStopped  = false;
+let seekTimer    = null;
 
-// PDFを別タブで開いた際やiOSで一瞬hiddenになることがあるため3000msに設定
-const GUARD_MS = 3000;
+// PDF/実ページを開いた直後だけ停止抑止
+let suppressStopUntil = 0;
+const SUPPRESS_MS = 1500;
+
+function shouldSuppressStop(){
+  return Date.now() < suppressStopUntil;
+}
 
 // ===== 停止 =====
 function stopAudio(intentional = true){
   userStopped = intentional;
-  clearInterval(seekTimer); seekTimer = null;
+  clearInterval(seekTimer);
+  seekTimer = null;
+
   if(viewerAudio){
     viewerAudio.onplay  = null;
     viewerAudio.onpause = null;
@@ -118,42 +126,44 @@ function stopAudio(intentional = true){
     viewerAudio.currentTime = 0;
     viewerAudio = null;
   }
+
   document.querySelectorAll(".row.playing").forEach(r=>{
     r.classList.remove("playing");
     const sb = r.querySelector(".seekbar");
-    if(sb){ sb.value=0; updateSeekbarFill(sb,0); }
+    if(sb){
+      sb.value = 0;
+      updateSeekbarFill(sb, 0);
+    }
     const cur = r.querySelector(".seek-cur");
     const dur = r.querySelector(".seek-dur");
     if(cur) cur.textContent = "0:00";
     if(dur) dur.textContent = "0:00";
   });
+
   if(currentBtn) currentBtn.textContent = "▶";
-  currentBtn=null; currentRow=null; currentDocId=null;
+  currentBtn = null;
+  currentRow = null;
+  currentDocId = null;
 }
 
 function stopIfSafe(){
-  if(Date.now() - lastPlayedAt < GUARD_MS) return;
+  if(shouldSuppressStop()) return;
   stopAudio(true);
 }
 
-// ===== visibilitychange で戻った時に自動再開 =====
+// ===== 画面離脱 =====
 document.addEventListener("visibilitychange", ()=>{
   if(document.visibilityState === "hidden"){
     stopIfSafe();
-  } else {
-    // タブ/アプリに戻った時、ユーザーが止めていなければ再開
-    // iOSは復帰直後にplay()が効かない場合があるため少し遅らせる
-    if(!userStopped && viewerAudio && viewerAudio.paused){
-      setTimeout(()=>{
-        if(!userStopped && viewerAudio && viewerAudio.paused){
-          viewerAudio.play().catch(()=>{
-            // 再開失敗時はボタンを▶に戻してユーザーに知らせる
-            if(currentBtn) currentBtn.textContent = "▶";
-          });
-        }
-      }, 400);
-    }
   }
+});
+
+window.addEventListener("pagehide", ()=>{
+  stopIfSafe();
+});
+
+window.addEventListener("beforeunload", ()=>{
+  stopIfSafe();
 });
 
 // ===== シークバー補助 =====
@@ -169,30 +179,16 @@ function updateSeekbarFill(sb, pct){
 }
 
 // ===== 音声再生 =====
-//
-// 設計方針：
-//   iOS Safari / Android Chrome 両対応のために
-//   play() を async関数の中で直接 await する。
-//   new Promise ラップは使わない
-//   （iOSはPromiseコンストラクタ経由だとautoplayコンテキストが
-//     切れる場合がある）。
-//
-//   m4a → aac の順で試すが、それぞれ完全に独立した
-//   try/catch ブロックにし、forループは使わない。
-//   →「m4aのplay()が成功してもaacのコードが走る」競合を排除。
-//
 async function loadAndPlayAudio(id, row, btn, seekWrap){
 
   let audio = null;
 
-  // --- m4a を試す ---
   try{
     const a = new Audio(`audio/${id}.m4a`);
     await a.play();
     audio = a;
   }catch(_){}
 
-  // --- aac を試す ---
   if(!audio){
     try{
       const a = new Audio(`audio/${id}.aac`);
@@ -201,7 +197,6 @@ async function loadAndPlayAudio(id, row, btn, seekWrap){
     }catch(_){}
   }
 
-  // --- mp3 を試す（古いiOS対策） ---
   if(!audio){
     try{
       const a = new Audio(`audio/${id}.mp3`);
@@ -212,16 +207,13 @@ async function loadAndPlayAudio(id, row, btn, seekWrap){
 
   if(!audio) throw new Error("音声なし");
 
-  // ここに来た時点で audio は再生中・確定済み
-  viewerAudio  = audio;
-  lastPlayedAt = Date.now();
+  viewerAudio = audio;
+  userStopped = false;
 
-  // ===== シークバー初期化 =====
   const sb  = seekWrap.querySelector(".seekbar");
   const cur = seekWrap.querySelector(".seek-cur");
   const dur = seekWrap.querySelector(".seek-dur");
 
-  // durationが取れるまで待つ
   const initSeek = ()=>{
     if(isFinite(audio.duration)){
       sb.max = audio.duration;
@@ -231,28 +223,27 @@ async function loadAndPlayAudio(id, row, btn, seekWrap){
   audio.addEventListener("loadedmetadata", initSeek);
   initSeek();
 
-  // シークバードラッグ中は更新を止める
   let dragging = false;
   sb.addEventListener("mousedown",  ()=>{ dragging=true; });
   sb.addEventListener("touchstart", ()=>{ dragging=true; }, {passive:true});
-  sb.addEventListener("mouseup",  ()=>{ dragging=false; });
-  sb.addEventListener("touchend", ()=>{ dragging=false; });
+  sb.addEventListener("mouseup",    ()=>{ dragging=false; });
+  sb.addEventListener("touchend",   ()=>{ dragging=false; });
 
   sb.addEventListener("input", ()=>{
-    const pct = sb.max>0 ? (sb.value/sb.max)*100 : 0;
+    const pct = sb.max > 0 ? (sb.value / sb.max) * 100 : 0;
     updateSeekbarFill(sb, pct);
     cur.textContent = fmt(Number(sb.value));
   });
+
   sb.addEventListener("change", ()=>{
     if(viewerAudio === audio){
       audio.currentTime = Number(sb.value);
     }
   });
 
-  // 定期更新タイマー
   clearInterval(seekTimer);
   seekTimer = setInterval(()=>{
-    if(!dragging && viewerAudio===audio && isFinite(audio.duration)){
+    if(!dragging && viewerAudio === audio && isFinite(audio.duration)){
       sb.value = audio.currentTime;
       const pct = (audio.currentTime / audio.duration) * 100;
       updateSeekbarFill(sb, pct);
@@ -262,21 +253,17 @@ async function loadAndPlayAudio(id, row, btn, seekWrap){
   }, 500);
 
   btn.textContent = "⏸";
-  // onpause：ユーザーが止めた場合はボタン更新、省電力等による強制停止は自動再開
+
   audio.onpause = ()=>{
     if(viewerAudio !== audio) return;
     if(userStopped){
       btn.textContent = "▶";
-    } else {
-      // 意図しない停止（Android省電力・バックグラウンド制限）→ 自動再開
-      setTimeout(()=>{
-        if(viewerAudio === audio && audio.paused && !userStopped){
-          audio.play().catch(()=>{ btn.textContent = "▶"; });
-        }
-      }, 300);
     }
   };
-  audio.onended = ()=>{ if(viewerAudio===audio) stopAudio(true); };
+
+  audio.onended = ()=>{
+    if(viewerAudio === audio) stopAudio(true);
+  };
 
   document.querySelectorAll(".row.playing").forEach(r=>r.classList.remove("playing"));
   row.classList.add("playing");
@@ -287,7 +274,7 @@ async function loadAndPlayAudio(id, row, btn, seekWrap){
 // ===== ユーティリティ =====
 function formatSeat(s){ return String(s).padStart(3,"0"); }
 
-const config={
+const config = {
   weekIncrement:35,
   anchors:[
     {date:"2026-06-14",start:131,dow:0},
@@ -299,37 +286,48 @@ const config={
 };
 
 function getStart(dateStr){
-  const date=new Date(dateStr); date.setHours(0,0,0,0);
-  const dow=date.getDay();
-  const list=config.anchors
-    .map(a=>{ const d=new Date(a.date); d.setHours(0,0,0,0); return {...a,d}; })
+  const date = new Date(dateStr);
+  date.setHours(0,0,0,0);
+  const dow = date.getDay();
+
+  const list = config.anchors
+    .map(a=>{
+      const d = new Date(a.date);
+      d.setHours(0,0,0,0);
+      return {...a, d};
+    })
     .filter(a=>a.dow===dow && a.d<=date)
     .sort((a,b)=>b.d-a.d);
+
   if(!list.length) return null;
-  const base=list[0];
-  return base.start + Math.floor((date-base.d)/(7*24*60*60*1000))*config.weekIncrement;
+
+  const base = list[0];
+  return base.start + Math.floor((date - base.d) / (7*24*60*60*1000)) * config.weekIncrement;
 }
 
 function generateDates(){
-  const result=[];
-  const today=new Date(); today.setHours(0,0,0,0);
-  const end=new Date(config.validUntil);
-  for(let d=new Date("2026-01-01"); d<=end; d.setDate(d.getDate()+1)){
+  const result = [];
+  const today = new Date();
+  today.setHours(0,0,0,0);
+
+  const end = new Date(config.validUntil);
+  for(let d = new Date("2026-01-01"); d <= end; d.setDate(d.getDate()+1)){
     d.setHours(0,0,0,0);
-    if(d<today) continue;
-    const day=d.getDay();
-    if(day===0||day===1){
-      const y=d.getFullYear();
-      const m=String(d.getMonth()+1).padStart(2,"0");
-      const da=String(d.getDate()).padStart(2,"0");
+    if(d < today) continue;
+
+    const day = d.getDay();
+    if(day === 0 || day === 1){
+      const y  = d.getFullYear();
+      const m  = String(d.getMonth()+1).padStart(2,"0");
+      const da = String(d.getDate()).padStart(2,"0");
       result.push(`${y}-${m}-${da}`);
     }
   }
   return result;
 }
 
-const dates=generateDates();
-const SEAT=5;
+const dates = generateDates();
+const SEAT = 5;
 
 function render(data){
 
@@ -350,7 +348,6 @@ function render(data){
     const day = d.getDay();
     const isPast = d < today;
 
-    // ===== タイトル =====
     const title = document.createElement("div");
     title.className = "title";
     title.innerHTML = `■ 読み手（${date} ${day===0?"日":"月"}）`;
@@ -358,18 +355,16 @@ function render(data){
     if(day===0){
       title.style.color = "red";
       title.style.background = "#ffeaea";
-    } else {
+    }else{
       title.style.background = "#f0f0f0";
     }
 
-    // ✅ 過去は薄く
     if(isPast){
       title.style.opacity = 0.5;
     }
 
     app.appendChild(title);
 
-    // ===== 空き状況 =====
     let used = 0;
     for(let i=0;i<SEAT;i++){
       if(data?.[date]?.[start+i]) used++;
@@ -381,33 +376,25 @@ function render(data){
     remainDiv.className = "remain";
     remainDiv.innerHTML =
       remain===0
-      ? "<b style='color:#3399ff;'>🔵 満席</b>"
-      : `<b style='color:green;'>🟢 空き：あと${remain}席</b>`;
-
-    if(isPast){
-      remainDiv.style.opacity = 0.5;
-    }
+      ? `<span style="color:red;font-weight:bold;">満席</span>`
+      : `残り <b>${remain}</b> 席`;
+    if(isPast) remainDiv.style.opacity = 0.5;
 
     app.appendChild(remainDiv);
 
-    // ===== 行 =====
     for(let i=0;i<SEAT;i++){
-
       const seat = start + i;
-      const id = formatSeat(seat);
-
+      const id   = formatSeat(seat);
       const name = data?.[date]?.[seat] || "";
 
       const row = document.createElement("div");
       row.className = "row";
       row.classList.add(name ? "filled-row" : "empty-row");
 
-      // ✅ 過去は視覚的に区別
       if(isPast){
         row.style.opacity = 0.5;
       }
 
-      // ===== 上段 =====
       const top = document.createElement("div");
       top.className = "row-top";
 
@@ -415,7 +402,6 @@ function render(data){
       num.className = "seat";
       num.textContent = seat;
 
-      // ===== シークバー（btn.onclickより前に生成） =====
       const seekWrap = document.createElement("div");
       seekWrap.className = "seekbar-wrap";
       seekWrap.innerHTML =
@@ -430,8 +416,6 @@ function render(data){
       btn.textContent = "▶";
 
       btn.onclick = async () => {
-
-        // ✅ 同じ再生 → ユーザーが意図して停止
         if(currentDocId === id && viewerAudio && !viewerAudio.paused){
           stopAudio(true);
           return;
@@ -447,28 +431,22 @@ function render(data){
         }
       };
 
-      // ✅ PDFボタン（音声と独立）
-      // 別タブを開くと visibilitychange(hidden) が発火するため
-      // lastPlayedAt を更新＆userStopped=false にして音声を止めない
       const pdfBtn = document.createElement("button");
       pdfBtn.className = "play";
       pdfBtn.textContent = "📄";
       pdfBtn.title = "PDFを開く";
       pdfBtn.onclick = () => {
-        lastPlayedAt = Date.now();
-        userStopped = false;
+        suppressStopUntil = Date.now() + SUPPRESS_MS;
         window.open(`docs/${id}.pdf`, "_blank");
       };
 
-      // ✅ 実ページボタン（docs2/フォルダ）
       const doc2Btn = document.createElement("button");
       doc2Btn.className = "play";
       doc2Btn.textContent = "実ページ";
       doc2Btn.title = "実ページを開く";
       doc2Btn.style.fontSize = "11px";
       doc2Btn.onclick = () => {
-        lastPlayedAt = Date.now();
-        userStopped = false;
+        suppressStopUntil = Date.now() + SUPPRESS_MS;
         window.open(`docs2/${id}.pdf`, "_blank");
       };
 
@@ -477,19 +455,15 @@ function render(data){
       top.appendChild(pdfBtn);
       top.appendChild(doc2Btn);
 
-      // ===== 名前 =====
       const label = document.createElement("div");
       label.className = "label";
       label.innerHTML = name ? `<b>${name}</b>` : "空き";
 
-      // ===== 予約ボタン =====
       const edit = document.createElement("button");
       edit.className = "edit";
       edit.textContent = name ? "編集" : "予約";
 
-      // ✅ 過去の日は編集禁止
       edit.onclick = () => {
-
         if(isPast){
           alert("過去の予約は変更できません");
           return;
@@ -505,19 +479,16 @@ function render(data){
       row.appendChild(top);
       row.appendChild(label);
       row.appendChild(edit);
-
       row.appendChild(seekWrap);
 
       app.appendChild(row);
     }
-
   });
 }
 
-db.ref("reservations").on("value", snap=>{ render(snap.val()); });
-
-window.addEventListener("pagehide",     stopIfSafe);
-window.addEventListener("beforeunload", stopIfSafe);
+db.ref("reservations").on("value", snap=>{
+  render(snap.val());
+});
 </script>
 </body>
 </html>
