@@ -38,6 +38,31 @@ h1{
 .empty-row{ border-left:6px solid #22c55e; }
 .filled-row{ border-left:6px solid #2563eb; }
 .playing{ outline:3px solid #f59e0b; background:#fff7ed; }
+/* ===== シークバー ===== */
+.seekbar-wrap{
+  display:none; width:100%; padding:6px 0 2px; box-sizing:border-box;
+}
+.playing .seekbar-wrap{ display:block; }
+.seekbar-time{
+  display:flex; justify-content:space-between;
+  font-size:11px; color:#888; margin-bottom:2px;
+}
+.seekbar{
+  -webkit-appearance:none; appearance:none;
+  width:100%; height:6px; border-radius:3px; outline:none; cursor:pointer;
+  background: linear-gradient(to right, #f59e0b 0%, #e5e7eb 0%);
+}
+.seekbar::-webkit-slider-thumb{
+  -webkit-appearance:none; appearance:none;
+  width:18px; height:18px; border-radius:50%;
+  background:#f59e0b; cursor:pointer; border:2px solid #fff;
+  box-shadow:0 1px 3px rgba(0,0,0,0.3);
+}
+.seekbar::-moz-range-thumb{
+  width:18px; height:18px; border-radius:50%;
+  background:#f59e0b; cursor:pointer; border:2px solid #fff;
+  box-shadow:0 1px 3px rgba(0,0,0,0.3);
+}
 button{
   border:none; background:#e5e7eb; padding:6px 10px;
   border-radius:8px; cursor:pointer; transition:.2s;
@@ -75,6 +100,7 @@ let currentRow   = null;
 let currentBtn   = null;
 let lastPlayedAt = 0;
 let userStopped  = false;  // ユーザーが意図して停止したかどうか
+let seekTimer    = null;   // シークバー更新タイマー
 
 // PDFを別タブで開いた際やiOSで一瞬hiddenになることがあるため3000msに設定
 const GUARD_MS = 3000;
@@ -82,6 +108,7 @@ const GUARD_MS = 3000;
 // ===== 停止 =====
 function stopAudio(intentional = true){
   userStopped = intentional;
+  clearInterval(seekTimer); seekTimer = null;
   if(viewerAudio){
     viewerAudio.onplay  = null;
     viewerAudio.onpause = null;
@@ -91,7 +118,15 @@ function stopAudio(intentional = true){
     viewerAudio.currentTime = 0;
     viewerAudio = null;
   }
-  document.querySelectorAll(".row.playing").forEach(r=>r.classList.remove("playing"));
+  document.querySelectorAll(".row.playing").forEach(r=>{
+    r.classList.remove("playing");
+    const sb = r.querySelector(".seekbar");
+    if(sb){ sb.value=0; updateSeekbarFill(sb,0); }
+    const cur = r.querySelector(".seek-cur");
+    const dur = r.querySelector(".seek-dur");
+    if(cur) cur.textContent = "0:00";
+    if(dur) dur.textContent = "0:00";
+  });
   if(currentBtn) currentBtn.textContent = "▶";
   currentBtn=null; currentRow=null; currentDocId=null;
 }
@@ -113,6 +148,18 @@ document.addEventListener("visibilitychange", ()=>{
   }
 });
 
+// ===== シークバー補助 =====
+function fmt(sec){
+  if(!isFinite(sec)) return "0:00";
+  const m = Math.floor(sec/60);
+  const s = String(Math.floor(sec%60)).padStart(2,"0");
+  return `${m}:${s}`;
+}
+function updateSeekbarFill(sb, pct){
+  sb.style.background =
+    `linear-gradient(to right,#f59e0b ${pct}%,#e5e7eb ${pct}%)`;
+}
+
 // ===== 音声再生 =====
 //
 // 設計方針：
@@ -126,7 +173,7 @@ document.addEventListener("visibilitychange", ()=>{
 //   try/catch ブロックにし、forループは使わない。
 //   →「m4aのplay()が成功してもaacのコードが走る」競合を排除。
 //
-async function loadAndPlayAudio(id, row, btn){
+async function loadAndPlayAudio(id, row, btn, seekWrap){
 
   let audio = null;
 
@@ -152,9 +199,52 @@ async function loadAndPlayAudio(id, row, btn){
   viewerAudio  = audio;
   lastPlayedAt = Date.now();
 
-  // イベントはplay()成功確定後に登録（誤発火なし）
-  // onplay/onpause は既に再生中のためこの後は来ない可能性があるので
-  // ボタン状態はここで直接セットする
+  // ===== シークバー初期化 =====
+  const sb  = seekWrap.querySelector(".seekbar");
+  const cur = seekWrap.querySelector(".seek-cur");
+  const dur = seekWrap.querySelector(".seek-dur");
+
+  // durationが取れるまで待つ
+  const initSeek = ()=>{
+    if(isFinite(audio.duration)){
+      sb.max = audio.duration;
+      dur.textContent = fmt(audio.duration);
+    }
+  };
+  audio.addEventListener("loadedmetadata", initSeek);
+  initSeek();
+
+  // シークバードラッグ中は更新を止める
+  let dragging = false;
+  sb.addEventListener("mousedown",  ()=>{ dragging=true; });
+  sb.addEventListener("touchstart", ()=>{ dragging=true; }, {passive:true});
+  sb.addEventListener("mouseup",  ()=>{ dragging=false; });
+  sb.addEventListener("touchend", ()=>{ dragging=false; });
+
+  sb.addEventListener("input", ()=>{
+    const pct = sb.max>0 ? (sb.value/sb.max)*100 : 0;
+    updateSeekbarFill(sb, pct);
+    cur.textContent = fmt(Number(sb.value));
+  });
+  sb.addEventListener("change", ()=>{
+    if(viewerAudio === audio){
+      audio.currentTime = Number(sb.value);
+      lastPlayedAt = Date.now();
+    }
+  });
+
+  // 定期更新タイマー
+  clearInterval(seekTimer);
+  seekTimer = setInterval(()=>{
+    if(!dragging && viewerAudio===audio && isFinite(audio.duration)){
+      sb.value = audio.currentTime;
+      const pct = (audio.currentTime / audio.duration) * 100;
+      updateSeekbarFill(sb, pct);
+      cur.textContent = fmt(audio.currentTime);
+      dur.textContent = fmt(audio.duration);
+    }
+  }, 500);
+
   btn.textContent = "⏸";
   // onpause：ユーザーが止めた場合はボタン更新、省電力等による強制停止は自動再開
   audio.onpause = ()=>{
@@ -171,7 +261,6 @@ async function loadAndPlayAudio(id, row, btn){
     }
   };
   audio.onended = ()=>{ if(viewerAudio===audio) stopAudio(true); };
-  // onplay は登録しない（再生開始済みなので不要・誤動作の原因になる）
 
   document.querySelectorAll(".row.playing").forEach(r=>r.classList.remove("playing"));
   row.classList.add("playing");
@@ -325,7 +414,7 @@ function render(data){
         stopAudio(true);
 
         try{
-          await loadAndPlayAudio(id, row, btn);
+          await loadAndPlayAudio(id, row, btn, seekWrap);
           currentDocId = id;
         }catch{
           stopAudio(true);
@@ -376,6 +465,17 @@ function render(data){
       row.appendChild(top);
       row.appendChild(label);
       row.appendChild(edit);
+
+      // ===== シークバー =====
+      const seekWrap = document.createElement("div");
+      seekWrap.className = "seekbar-wrap";
+      seekWrap.innerHTML =
+        `<div class="seekbar-time">` +
+          `<span class="seek-cur">0:00</span>` +
+          `<span class="seek-dur">0:00</span>` +
+        `</div>` +
+        `<input class="seekbar" type="range" min="0" max="100" step="0.1" value="0">`;
+      row.appendChild(seekWrap);
 
       app.appendChild(row);
     }
