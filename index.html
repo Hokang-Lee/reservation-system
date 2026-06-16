@@ -30,7 +30,7 @@ h1{
   background:white; box-shadow:0 1px 4px rgba(0,0,0,0.06); transition:.2s;
 }
 .row:hover{ transform:translateY(-2px); }
-.row-top{ display:flex; align-items:center; gap:8px; width:210px; }
+.row-top{ display:flex; align-items:center; gap:8px; width:150px; }
 .row-top .seat{ width:55px; font-weight:bold; }
 .row-top .play{ width:45px; text-align:center; }
 .label{ flex:1; font-size:15px; }
@@ -433,21 +433,9 @@ function render(data){
         window.open(`docs/${id}.pdf`, "_blank");
       };
 
-      // ✅ 実ページボタン（doc2/フォルダ）
-      const doc2Btn = document.createElement("button");
-      doc2Btn.className = "play";
-      doc2Btn.textContent = "実ページ";
-      doc2Btn.title = "実ページを開く";
-      doc2Btn.style.fontSize = "11px";
-      doc2Btn.onclick = () => {
-        lastPlayedAt = Date.now();
-        window.open(`doc2/${id}.pdf`, "_blank");
-      };
-
       top.appendChild(num);
       top.appendChild(btn);
       top.appendChild(pdfBtn);
-      top.appendChild(doc2Btn);
 
       // ===== 名前 =====
       const label = document.createElement("div");
