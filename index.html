@@ -142,8 +142,16 @@ document.addEventListener("visibilitychange", ()=>{
     stopIfSafe();
   } else {
     // タブ/アプリに戻った時、ユーザーが止めていなければ再開
+    // iOSは復帰直後にplay()が効かない場合があるため少し遅らせる
     if(!userStopped && viewerAudio && viewerAudio.paused){
-      viewerAudio.play().catch(()=>{});
+      setTimeout(()=>{
+        if(!userStopped && viewerAudio && viewerAudio.paused){
+          viewerAudio.play().catch(()=>{
+            // 再開失敗時はボタンを▶に戻してユーザーに知らせる
+            if(currentBtn) currentBtn.textContent = "▶";
+          });
+        }
+      }, 400);
     }
   }
 });
@@ -180,14 +188,23 @@ async function loadAndPlayAudio(id, row, btn, seekWrap){
   // --- m4a を試す ---
   try{
     const a = new Audio(`audio/${id}.m4a`);
-    await a.play();   // ← タップコンテキストを保ったまま直接await
+    await a.play();
     audio = a;
   }catch(_){}
 
-  // --- m4a が失敗した場合のみ aac を試す ---
+  // --- aac を試す ---
   if(!audio){
     try{
       const a = new Audio(`audio/${id}.aac`);
+      await a.play();
+      audio = a;
+    }catch(_){}
+  }
+
+  // --- mp3 を試す（古いiOS対策） ---
+  if(!audio){
+    try{
+      const a = new Audio(`audio/${id}.mp3`);
       await a.play();
       audio = a;
     }catch(_){}
@@ -422,18 +439,19 @@ function render(data){
       };
 
       // ✅ PDFボタン（音声と独立）
-      // 別タブを開くと Android で visibilitychange(hidden) が発火するため
-      // lastPlayedAt を更新してガードし、音声を止めない
+      // 別タブを開くと visibilitychange(hidden) が発火するため
+      // lastPlayedAt を更新＆userStopped=false にして音声を止めない
       const pdfBtn = document.createElement("button");
       pdfBtn.className = "play";
       pdfBtn.textContent = "📄";
       pdfBtn.title = "PDFを開く";
       pdfBtn.onclick = () => {
         lastPlayedAt = Date.now();
+        userStopped = false;
         window.open(`docs/${id}.pdf`, "_blank");
       };
 
-      // ✅ 実ページボタン（doc2/フォルダ）
+      // ✅ 実ページボタン（docs2/フォルダ）
       const doc2Btn = document.createElement("button");
       doc2Btn.className = "play";
       doc2Btn.textContent = "実ページ";
@@ -441,6 +459,7 @@ function render(data){
       doc2Btn.style.fontSize = "11px";
       doc2Btn.onclick = () => {
         lastPlayedAt = Date.now();
+        userStopped = false;
         window.open(`docs2/${id}.pdf`, "_blank");
       };
 
