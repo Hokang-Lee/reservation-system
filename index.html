@@ -235,8 +235,8 @@ async function loadAndPlayAudio(id, row, btn, seekWrap){
   let dragging = false;
   sb.addEventListener("mousedown",  ()=>{ dragging=true; });
   sb.addEventListener("touchstart", ()=>{ dragging=true; }, {passive:true});
-  sb.addEventListener("mouseup",  ()=>{ dragging=false; lastPlayedAt=Date.now(); userStopped=false; });
-  sb.addEventListener("touchend", ()=>{ dragging=false; lastPlayedAt=Date.now(); userStopped=false; });
+  sb.addEventListener("mouseup",  ()=>{ dragging=false; });
+  sb.addEventListener("touchend", ()=>{ dragging=false; });
 
   sb.addEventListener("input", ()=>{
     const pct = sb.max>0 ? (sb.value/sb.max)*100 : 0;
@@ -246,8 +246,6 @@ async function loadAndPlayAudio(id, row, btn, seekWrap){
   sb.addEventListener("change", ()=>{
     if(viewerAudio === audio){
       audio.currentTime = Number(sb.value);
-      lastPlayedAt = Date.now();
-      userStopped = false;
     }
   });
 
