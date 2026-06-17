@@ -166,7 +166,8 @@ window.addEventListener("focus", ()=>{
 });
 
 window.addEventListener("pagehide", ()=>{
-  stopIfSafe();
+  if(suppressStopForPdf) return;
+  stopAudio(true);
 });
 
 window.addEventListener("beforeunload", ()=>{
