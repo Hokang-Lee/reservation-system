@@ -83,6 +83,15 @@ button:hover{ background:#d1d5db; }
 
 <h1>予習機能付き<br>訓読予約</h1>
 <div id="app"></div>
+<div id="pdfModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75); z-index:9999;">
+  <div style="position:absolute; inset:20px; background:#fff; border-radius:12px; overflow:hidden; display:flex; flex-direction:column;">
+    <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 12px; background:#f3f4f6; border-bottom:1px solid #ddd;">
+      <div id="pdfModalTitle" style="font-weight:bold;">文章表示</div>
+      <button id="closePdfModal" style="padding:6px 10px;">閉じる</button>
+    </div>
+    <iframe id="pdfFrame" style="flex:1; width:100%; border:none;"></iframe>
+  </div>
+</div>
 
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
@@ -94,6 +103,11 @@ firebase.initializeApp({
   projectId:"reservation-2026"
 });
 const db = firebase.database();
+
+function isIPhone(){
+  const ua = navigator.userAgent || "";
+  return /iPhone/i.test(ua);
+}
 
 // ===== 状態 =====
 let viewerAudio  = null;
@@ -149,7 +163,30 @@ function stopIfSafe(){
   if(shouldSuppressStop()) return;
   stopAudio(true);
 }
+function openPdfModal(url, title="文章表示"){
+  const modal = document.getElementById("pdfModal");
+  const frame = document.getElementById("pdfFrame");
+  const ttl   = document.getElementById("pdfModalTitle");
 
+  ttl.textContent = title;
+  frame.src = url;
+  modal.style.display = "block";
+}
+
+function closePdfModal(){
+  const modal = document.getElementById("pdfModal");
+  const frame = document.getElementById("pdfFrame");
+  frame.src = "";
+  modal.style.display = "none";
+  suppressStopForPdf = false;
+}
+
+window.addEventListener("DOMContentLoaded", ()=>{
+  const closeBtn = document.getElementById("closePdfModal");
+  if(closeBtn){
+    closeBtn.onclick = closePdfModal;
+  }
+});
 // ===== 画面離脱 =====
 document.addEventListener("visibilitychange", ()=>{
   if(document.visibilityState === "visible"){
@@ -450,7 +487,14 @@ function render(data){
       pdfBtn.onclick = () => {
         suppressStopForPdf = true;
         userStopped = false;
-        window.open(`docs/${id}.pdf`, "_blank");
+
+        const url = `docs/${id}.pdf`;
+
+        if(isIPhone()){
+          openPdfModal(url, `文章 ${id}`);
+        }else{
+          window.open(url, "_blank");
+        }
       };
 
       const doc2Btn = document.createElement("button");
@@ -461,7 +505,14 @@ function render(data){
       doc2Btn.onclick = () => {
         suppressStopForPdf = true;
         userStopped = false;
-        window.open(`docs2/${id}.pdf`, "_blank");
+
+        const url = `docs2/${id}.pdf`;
+
+        if(isIPhone()){
+          openPdfModal(url, `実ページ ${id}`);
+        }else{
+          window.open(url, "_blank");
+        }
       };
 
       top.appendChild(num);
