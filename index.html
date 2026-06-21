@@ -198,6 +198,11 @@ document.addEventListener("visibilitychange", ()=>{
   }
 });
 
+// pageshow: Android別タブから戻ったとき visibilitychange が来ない場合の保険
+window.addEventListener("pageshow", ()=>{
+  suppressStopForPdf = false;
+});
+
 window.addEventListener("focus", ()=>{
   suppressStopForPdf = false;
 });
@@ -494,6 +499,11 @@ function render(data){
           openPdfModal(url, `文章 ${id}`);
         }else{
           window.open(url, "_blank");
+          // Android: 別タブを開いた後 visibilitychange/focus が
+          // 確実に来るとは限らないため、5秒後に強制リセット。
+          // この時点でまだ suppressStopForPdf=true のままなら
+          // 以降の画面離脱で音が止まらなくなるのを防ぐ。
+          setTimeout(()=>{ suppressStopForPdf = false; }, 5000);
         }
       };
 
@@ -512,6 +522,7 @@ function render(data){
           openPdfModal(url, `実ページ ${id}`);
         }else{
           window.open(url, "_blank");
+          setTimeout(()=>{ suppressStopForPdf = false; }, 5000);
         }
       };
 
