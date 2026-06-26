@@ -83,6 +83,7 @@ button:hover{ background:#d1d5db; }
 
 <h1>予習機能付き<br>訓読予約</h1>
 <div id="app"></div>
+
 <div id="pdfModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75); z-index:9999;">
   <div style="position:absolute; inset:20px; background:#fff; border-radius:12px; overflow:hidden; display:flex; flex-direction:column;">
     <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 12px; background:#f3f4f6; border-bottom:1px solid #ddd;">
@@ -108,7 +109,6 @@ function isIPhone(){
   const ua = navigator.userAgent || "";
   return /iPhone/i.test(ua);
 }
-
 // ===== 状態 =====
 let viewerAudio  = null;
 let currentDocId = null;
@@ -163,6 +163,7 @@ function stopIfSafe(){
   if(shouldSuppressStop()) return;
   stopAudio(true);
 }
+
 function openPdfModal(url, title="文章表示"){
   const modal = document.getElementById("pdfModal");
   const frame = document.getElementById("pdfFrame");
@@ -187,6 +188,7 @@ window.addEventListener("DOMContentLoaded", ()=>{
     closeBtn.onclick = closePdfModal;
   }
 });
+
 // ===== 画面離脱 =====
 document.addEventListener("visibilitychange", ()=>{
   if(document.visibilityState === "visible"){
@@ -227,7 +229,6 @@ function updateSeekbarFill(sb, pct){
   sb.style.background =
     `linear-gradient(to right,#f59e0b ${pct}%,#e5e7eb ${pct}%)`;
 }
-
 // ===== 古いiPhone対策つき音声再生 =====
 async function tryPlay(src){
   const a = new Audio();
@@ -265,6 +266,7 @@ async function loadAndPlayAudio(id, row, btn, seekWrap){
     alert("音声を再生できませんでした。iPhoneの消音モード解除、音量確認、再読み込みをお試しください。");
     throw new Error("音声なし");
   }
+
   viewerAudio = audio;
   userStopped = false;
 
@@ -308,7 +310,7 @@ async function loadAndPlayAudio(id, row, btn, seekWrap){
       cur.textContent = fmt(audio.currentTime);
       dur.textContent = fmt(audio.duration);
     }
-  }, 500);
+  }, 200);
 
   btn.textContent = "⏸";
 
@@ -329,63 +331,115 @@ async function loadAndPlayAudio(id, row, btn, seekWrap){
   currentBtn = btn;
 }
 
-// ===== ユーティリティ =====
-function formatSeat(s){ return String(s).padStart(3,"0"); }
+// ===== 予約ロジック用 =====
+const ROUND_START = "2026-06-27";
+const ROUND_DAYS  = 40;
+const FIRST_DAY_SEATS = [1,2,3,4,5,6,7,8,9];
+const NORMAL_SEAT_COUNT = 5;
 
+// 表示範囲（必要なら延長）
 const config = {
-  weekIncrement:35,
-  anchors:[
-    {date:"2026-06-14",start:131,dow:0},
-    {date:"2026-06-15",start:136,dow:1},
-    {date:"2026-06-28",start:1,  dow:0},
-    {date:"2026-06-29",start:6,  dow:1}
-  ],
-  validUntil:"2026-08-03"
+  validUntil: "2027-12-31"
 };
 
+function parseDateLocal(str){
+  const [y,m,d] = str.split("-").map(Number);
+  return new Date(y, m-1, d);
+}
+function formatDateLocal(date){
+  const y = date.getFullYear();
+  const m = String(date.getMonth()+1).padStart(2,"0");
+  const d = String(date.getDate()).padStart(2,"0");
+  return `${y}-${m}-${d}`;
+}
+function addDays(date, days){
+  const d = new Date(date);
+  d.setDate(d.getDate() + days);
+  return d;
+}
+function diffDays(a, b){
+  const aa = new Date(a.getFullYear(), a.getMonth(), a.getDate());
+  const bb = new Date(b.getFullYear(), b.getMonth(), b.getDate());
+  return Math.floor((bb - aa) / (24 * 60 * 60 * 1000));
+}
+
+function getRoundDay(dateStr){
+  const start = parseDateLocal(ROUND_START);
+  const date  = parseDateLocal(dateStr);
+  const days  = diffDays(start, date);
+  if(days < 0) return null;
+  return (days % ROUND_DAYS) + 1;
+}
+
+function isTargetDate(dateStr){
+  const n = getRoundDay(dateStr);
+  if(n === null) return false;
+  if(n === 1) return true;
+
+  const d = parseDateLocal(dateStr);
+  const day = d.getDay();
+  return day === 0 || day === 1; // 日・月のみ
+}
+
 function getStart(dateStr){
-  const date = new Date(dateStr);
-  date.setHours(0,0,0,0);
-  const dow = date.getDay();
+  const n = getRoundDay(dateStr);
+  if(n === null || n === 1) return null;
+  return (n - 2) * 5 + 1;
+}
 
-  const list = config.anchors
-    .map(a=>{
-      const d = new Date(a.date);
-      d.setHours(0,0,0,0);
-      return {...a, d};
-    })
-    .filter(a=>a.dow===dow && a.d<=date)
-    .sort((a,b)=>b.d-a.d);
+function getSeatList(dateStr){
+  const n = getRoundDay(dateStr);
+  if(n === null) return [];
 
-  if(!list.length) return null;
+  if(n === 1) return [...FIRST_DAY_SEATS];
 
-  const base = list[0];
-  return base.start + Math.floor((date - base.d) / (7*24*60*60*1000)) * config.weekIncrement;
+  const d = parseDateLocal(dateStr);
+  const day = d.getDay();
+  if(day !== 0 && day !== 1) return [];
+
+  const start = getStart(dateStr);
+  return Array.from({length:NORMAL_SEAT_COUNT}, (_,i)=>start+i);
 }
 
 function generateDates(){
   const result = [];
   const today = new Date();
   today.setHours(0,0,0,0);
-  const end = new Date(config.validUntil);
-  for(let d = new Date("2026-01-01"); d <= end; d.setDate(d.getDate()+1)){
+
+  const end = parseDateLocal(config.validUntil);
+  for(let d = parseDateLocal(ROUND_START); d <= end; d = addDays(d, 1)){
     d.setHours(0,0,0,0);
     if(d < today) continue;
 
-    const day = d.getDay();
-    if(day === 0 || day === 1){
-      const y  = d.getFullYear();
-      const m  = String(d.getMonth()+1).padStart(2,"0");
-      const da = String(d.getDate()).padStart(2,"0");
-      result.push(`${y}-${m}-${da}`);
-    }
+    const ds = formatDateLocal(d);
+    if(isTargetDate(ds)) result.push(ds);
   }
   return result;
 }
 
 const dates = generateDates();
-const SEAT = 5;
 
+function formatSeat(n){
+  return String(n).padStart(3,"0");
+}
+
+function editNormalSeat(date, seat, currentName){
+  const d = parseDateLocal(date);
+  const today = new Date();
+  today.setHours(0,0,0,0);
+
+  if(d < today){
+    alert("過去の予約は変更できません");
+    return;
+  }
+
+  const input = prompt("名前入力", currentName || "");
+  if(input === null) return;
+
+  const ref = db.ref(`reservations/${date}/${seat}`);
+  const trimmed = input.trim();
+  trimmed === "" ? ref.remove() : ref.set(trimmed);
+}
 function render(data){
   const app = document.getElementById("app");
   app.innerHTML = "";
@@ -394,10 +448,10 @@ function render(data){
   today.setHours(0,0,0,0);
 
   dates.forEach(date => {
-    const start = getStart(date);
-    if(start === null) return;
+    const roundDay = getRoundDay(date);
+    if(roundDay === null) return;
 
-    const d = new Date(date);
+    const d = parseDateLocal(date);
     d.setHours(0,0,0,0);
 
     const day = d.getDay();
@@ -405,7 +459,7 @@ function render(data){
 
     const title = document.createElement("div");
     title.className = "title";
-    title.innerHTML = `■ 読み手（${date} ${day===0?"日":"月"}）`;
+    title.innerHTML = `■ ${date}（${["日","月","火","水","木","金","土"][day]}） / ラウンド内${roundDay}日目`;
 
     if(day===0){
       title.style.color = "red";
@@ -413,19 +467,84 @@ function render(data){
     }else{
       title.style.background = "#f0f0f0";
     }
-
-    if(isPast){
-      title.style.opacity = 0.5;
-    }
+    if(isPast) title.style.opacity = 0.5;
 
     app.appendChild(title);
 
-    let used = 0;
-    for(let i=0;i<SEAT;i++){
-      if(data?.[date]?.[start+i]) used++;
+    // ===== 1日目：縦並び（席番号＋名前表示＋予約/編集）=====
+    if(roundDay === 1){
+      FIRST_DAY_SEATS.forEach(seat => {
+        const name = data?.[date]?.[seat] || "";
+
+        const row = document.createElement("div");
+        row.className = "row";
+        row.classList.add(name ? "filled-row" : "empty-row");
+        if(isPast) row.style.opacity = 0.5;
+
+        const top = document.createElement("div");
+        top.className = "row-top";
+
+        const num = document.createElement("div");
+        num.className = "seat";
+        num.textContent = seat;
+
+        // 1日目は「再生・PDF・実ページ・シークバー」は出さない
+        top.appendChild(num);
+
+        const label = document.createElement("div");
+        label.className = "label";
+        label.innerHTML = name ? `<b>${name}</b>` : "空き";
+
+        const edit = document.createElement("button");
+        edit.className = "edit";
+        edit.textContent = name ? "編集" : "予約";
+
+        edit.onclick = () => {
+          if(isPast){
+            alert("過去の予約は変更できません");
+            return;
+          }
+
+          const input = prompt("名前入力", name);
+          if(input === null) return;
+
+          const trimmed = input.trim();
+          const ref = db.ref(`reservations/${date}/${seat}`);
+
+          // 空欄＝削除（確認なし）
+          if(trimmed === ""){
+            ref.remove();
+            return;
+          }
+
+          // 予約済みの上書き確認（不要ならこのifを削除OK）
+          if(name){
+            const ok = confirm(`この席は現在「${name}」で予約されています。\n上書きしますか？`);
+            if(!ok) return;
+          }
+
+          ref.set(trimmed);
+        };
+
+        row.appendChild(top);
+        row.appendChild(label);
+        row.appendChild(edit);
+
+        app.appendChild(row);
+      });
+
+      return; // 次の日付へ
     }
 
-    const remain = SEAT - used;
+    // ===== 2日目以後：従来型UI =====
+    const seatList = getSeatList(date);
+
+    // 残り席
+    let used = 0;
+    seatList.forEach(seat => {
+      if(data?.[date]?.[seat]) used++;
+    });
+    const remain = seatList.length - used;
 
     const remainDiv = document.createElement("div");
     remainDiv.className = "remain";
@@ -437,18 +556,14 @@ function render(data){
     if(isPast) remainDiv.style.opacity = 0.5;
     app.appendChild(remainDiv);
 
-    for(let i=0;i<SEAT;i++){
-      const seat = start + i;
+    seatList.forEach(seat => {
       const id   = formatSeat(seat);
       const name = data?.[date]?.[seat] || "";
 
       const row = document.createElement("div");
       row.className = "row";
       row.classList.add(name ? "filled-row" : "empty-row");
-
-      if(isPast){
-        row.style.opacity = 0.5;
-      }
+      if(isPast) row.style.opacity = 0.5;
 
       const top = document.createElement("div");
       top.className = "row-top";
@@ -469,7 +584,6 @@ function render(data){
       const btn = document.createElement("button");
       btn.className = "play";
       btn.textContent = "▶";
-
       btn.onclick = async () => {
         if(currentDocId === id && viewerAudio && !viewerAudio.paused){
           stopAudio(true);
@@ -487,7 +601,7 @@ function render(data){
 
       const pdfBtn = document.createElement("button");
       pdfBtn.className = "play";
-      pdfBtn.textContent = "📄";
+      pdfBtn.textContent = "文章";
       pdfBtn.title = "PDFを開く";
       pdfBtn.onclick = () => {
         suppressStopForPdf = true;
@@ -499,10 +613,7 @@ function render(data){
           openPdfModal(url, `文章 ${id}`);
         }else{
           window.open(url, "_blank");
-          // Android: 別タブを開いた後 visibilitychange/focus が
-          // 確実に来るとは限らないため、5秒後に強制リセット。
-          // この時点でまだ suppressStopForPdf=true のままなら
-          // 以降の画面離脱で音が止まらなくなるのを防ぐ。
+          // Android保険
           setTimeout(()=>{ suppressStopForPdf = false; }, 5000);
         }
       };
@@ -538,19 +649,7 @@ function render(data){
       const edit = document.createElement("button");
       edit.className = "edit";
       edit.textContent = name ? "編集" : "予約";
-
-      edit.onclick = () => {
-        if(isPast){
-          alert("過去の予約は変更できません");
-          return;
-        }
-
-        const input = prompt("名前入力", name);
-        if(input === null) return;
-
-        const ref = db.ref(`reservations/${date}/${seat}`);
-        input.trim()==="" ? ref.remove() : ref.set(input.trim());
-      };
+      edit.onclick = () => editNormalSeat(date, seat, name);
 
       row.appendChild(top);
       row.appendChild(label);
@@ -558,13 +657,14 @@ function render(data){
       row.appendChild(seekWrap);
 
       app.appendChild(row);
-    }
+    });
   });
 }
 
 db.ref("reservations").on("value", snap=>{
-  render(snap.val());
+  render(snap.val() || {});
 });
 </script>
+
 </body>
 </html>
