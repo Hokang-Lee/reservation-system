@@ -116,12 +116,25 @@ let currentRow   = null;
 let currentBtn   = null;
 let userStopped  = false;
 let seekTimer    = null;
+let lastPdfOpenAt = 0;
+const PC_PDF_GUARD_MS = 15000; // PCだけ：PDF操作後15秒は停止させない
 
 // PDF/実ページを開いている間は停止抑止
 let suppressStopForPdf = false;
 
+function isPC(){
+  const ua = navigator.userAgent || "";
+  return !/iPhone|Android/i.test(ua);
+}
+
 function shouldSuppressStop(){
-  return suppressStopForPdf;
+  // 既存の抑止（PDFボタン押下直後の保護）
+  if(suppressStopForPdf) return true;
+
+  // PCだけ：PDFを開いた直後の短時間は、tab移動による停止を抑止
+  if(isPC() && (Date.now() - lastPdfOpenAt) < PC_PDF_GUARD_MS) return true;
+
+  return false;
 }
 
 // ===== 停止 =====
@@ -604,6 +617,7 @@ function render(data){
       pdfBtn.textContent = "文章";
       pdfBtn.title = "PDFを開く";
       pdfBtn.onclick = () => {
+      lastPdfOpenAt = Date.now();      // ★追加
         suppressStopForPdf = true;
         userStopped = false;
 
@@ -624,6 +638,7 @@ function render(data){
       doc2Btn.title = "実ページを開く";
       doc2Btn.style.fontSize = "11px";
       doc2Btn.onclick = () => {
+      lastPdfOpenAt = Date.now();      // ★追加
         suppressStopForPdf = true;
         userStopped = false;
 
