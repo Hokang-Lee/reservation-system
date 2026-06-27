@@ -569,7 +569,8 @@ function render(data){
     }
 
     // ===== 2日目以後：従来型UI =====
-    const seatList = getSeatList(date);
+    const MAX_SEAT_NO = 192;
+    const seatList = getSeatList(date).filter(seat => seat <= MAX_SEAT_NO);
 
     // 残り席
     let used = 0;
