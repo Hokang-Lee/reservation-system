@@ -288,6 +288,12 @@ async function loadAndPlayAudio(id, row, btn, seekWrap){
   const cur = seekWrap.querySelector(".seek-cur");
   const dur = seekWrap.querySelector(".seek-dur");
 
+  // 前回のリスナーを一括解除してから再登録
+  if(seekWrap._sbAbort) seekWrap._sbAbort.abort();
+  const sbAc = new AbortController();
+  seekWrap._sbAbort = sbAc;
+  const sig = { signal: sbAc.signal };
+
   const initSeek = ()=>{
     if(isFinite(audio.duration)){
       sb.max = audio.duration;
@@ -298,22 +304,22 @@ async function loadAndPlayAudio(id, row, btn, seekWrap){
   initSeek();
 
   let dragging = false;
-  sb.addEventListener("mousedown", ()=>{ dragging = true; });
-  sb.addEventListener("touchstart", ()=>{ dragging = true; }, {passive:true});
-  sb.addEventListener("mouseup", ()=>{ dragging = false; });
-  sb.addEventListener("touchend", ()=>{ dragging = false; });
+  sb.addEventListener("mousedown",  ()=>{ dragging = true;  }, sig);
+  sb.addEventListener("touchstart", ()=>{ dragging = true;  }, { passive:true, signal: sbAc.signal });
+  sb.addEventListener("mouseup",    ()=>{ dragging = false; }, sig);
+  sb.addEventListener("touchend",   ()=>{ dragging = false; }, sig);
 
   sb.addEventListener("input", ()=>{
     const pct = sb.max > 0 ? (sb.value / sb.max) * 100 : 0;
     updateSeekbarFill(sb, pct);
     cur.textContent = fmt(Number(sb.value));
-  });
+  }, sig);
 
   sb.addEventListener("change", ()=>{
     if(viewerAudio === audio){
       audio.currentTime = Number(sb.value);
     }
-  });
+  }, sig);
 
   clearInterval(seekTimer);
   seekTimer = setInterval(()=>{
