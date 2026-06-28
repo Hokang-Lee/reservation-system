@@ -469,13 +469,13 @@ function render(data){
 
   dates.forEach(date => {
   
-   // ===== 締め切り：当日06:00、締め切り3時間後(09:00)を過ぎたら非表示 =====
+   // ===== 締め切り：当日06:00、締め切り2時間後(08:00)を過ぎたら非表示 =====
     const now = new Date();
 
     const deadline = parseDateLocal(date); // その日
     deadline.setHours(6, 0, 0, 0);         // 06:00
 
-    const hideAfter = new Date(deadline.getTime() + 3 * 60 * 60 * 1000); // 09:00
+    const hideAfter = new Date(deadline.getTime() + 2 * 60 * 60 * 1000); // 08:00
 
     if(now > hideAfter){
       return; // この日付はタイトルも席も丸ごと表示しない
