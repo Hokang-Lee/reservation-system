@@ -491,7 +491,8 @@ function render(data){
 
     const title = document.createElement("div");
     title.className = "title";
-    title.innerHTML = `■ ${date}（${["日","月","火","水","木","金","土"][day]}） / ラウンド内${roundDay}日目`;
+    const headingText = roundDay === 1 ? "ラウンド初日 家庭盟誓訓読" : `ラウンド内${roundDay}日目`;
+    title.textContent = `■ ${date}（${["日","月","火","水","木","金","土"][day]}） / ${headingText}`;
 
     if(day===0){
       title.style.color = "red";
@@ -525,7 +526,8 @@ function render(data){
 
         const label = document.createElement("div");
         label.className = "label";
-        label.innerHTML = name ? `<b>${name}</b>` : "空き";
+        label.textContent = name || "空き";
+        label.style.fontWeight = name ? "bold" : "";
 
         const edit = document.createElement("button");
         edit.className = "edit";
@@ -676,7 +678,8 @@ function render(data){
 
       const label = document.createElement("div");
       label.className = "label";
-      label.innerHTML = name ? `<b>${name}</b>` : "空き";
+      label.textContent = name || "空き";
+      label.style.fontWeight = name ? "bold" : "";
 
       const edit = document.createElement("button");
       edit.className = "edit";
