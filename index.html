@@ -109,6 +109,10 @@ function isIPhone(){
   const ua = navigator.userAgent || "";
   return /iPhone/i.test(ua);
 }
+function isAndroid(){
+  const ua = navigator.userAgent || "";
+  return /Android/i.test(ua);
+}
 // ===== 状態 =====
 let viewerAudio  = null;
 let currentDocId = null;
@@ -178,6 +182,35 @@ function openPdfModal(url, title="文章表示"){
   ttl.textContent = title;
   frame.src = url;
   modal.style.display = "block";
+}
+
+function toAbsoluteUrl(url){
+  return new URL(url, window.location.href).href;
+}
+
+function toGoogleDocsViewerUrl(url){
+  const absoluteUrl = toAbsoluteUrl(url);
+  return `https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(absoluteUrl)}`;
+}
+
+function openInNewTabOrCurrent(url){
+  const opened = window.open(url, "_blank");
+  if(!opened) window.location.href = url;
+}
+
+function openPdfForDevice(url, title){
+  if(isIPhone()){
+    openPdfModal(url, title);
+    return;
+  }
+
+  if(isAndroid() && /^https?:/i.test(window.location.protocol)){
+    openInNewTabOrCurrent(toGoogleDocsViewerUrl(url));
+  }else{
+    openInNewTabOrCurrent(url);
+  }
+
+  setTimeout(()=>{ suppressStopForPdf = false; }, 5000);
 }
 
 function closePdfModal(){
@@ -644,12 +677,7 @@ function render(data){
 
         const url = `docs/${id}.pdf`;
 
-        if(isIPhone()){
-          openPdfModal(url, `文章 ${id}`);
-        }else{
-          window.open(url, "_blank");
-          setTimeout(()=>{ suppressStopForPdf = false; }, 5000);
-        }
+        openPdfForDevice(url, `文章 ${id}`);
       };
 
       const doc2Btn = document.createElement("button");
@@ -663,12 +691,7 @@ function render(data){
 
         const url = `docs2/${id}.pdf`;
 
-        if(isIPhone()){
-          openPdfModal(url, `実ページ ${id}`);
-        }else{
-          window.open(url, "_blank");
-          setTimeout(()=>{ suppressStopForPdf = false; }, 5000);
-        }
+        openPdfForDevice(url, `実ページ ${id}`);
       };
 
       top.appendChild(num);
