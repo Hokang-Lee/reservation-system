@@ -124,6 +124,7 @@ let seekTimer    = null;
 
 // PDF/実ページを開いている間は停止抑止
 let suppressStopForPdf = false;
+let pdfModalOpen = false;
 
 function isMobileLike(){
   const ua = navigator.userAgent || "";
@@ -131,7 +132,7 @@ function isMobileLike(){
 }
 
 function shouldSuppressStop(){
-  return suppressStopForPdf;
+  return suppressStopForPdf || pdfModalOpen;
 }
 
 // ===== 停止 =====
@@ -180,8 +181,10 @@ function openPdfModal(url, title="文章表示"){
   const ttl   = document.getElementById("pdfModalTitle");
 
   ttl.textContent = title;
-  frame.src = url;
+  suppressStopForPdf = true;
+  pdfModalOpen = true;
   modal.style.display = "block";
+  frame.src = url;
 }
 
 function toAbsoluteUrl(url){
@@ -219,8 +222,9 @@ function openPdfForDevice(url, title){
 function closePdfModal(){
   const modal = document.getElementById("pdfModal");
   const frame = document.getElementById("pdfFrame");
-  frame.src = "";
   modal.style.display = "none";
+  frame.src = "";
+  pdfModalOpen = false;
   suppressStopForPdf = false;
 }
 
@@ -233,11 +237,6 @@ window.addEventListener("DOMContentLoaded", ()=>{
 
 // ===== 画面離脱 =====
 document.addEventListener("visibilitychange", ()=>{
-  if(document.visibilityState === "visible"){
-    suppressStopForPdf = false;
-    return;
-  }
-
   if(document.visibilityState === "hidden"){
     // モバイルだけ、非表示時に停止判定
     if(isMobileLike()){
@@ -248,17 +247,17 @@ document.addEventListener("visibilitychange", ()=>{
 
 // pageshow: Android別タブから戻ったとき visibilitychange が来ない場合の保険
 window.addEventListener("pageshow", ()=>{
-  suppressStopForPdf = false;
+  if(!pdfModalOpen) suppressStopForPdf = false;
 });
 
 window.addEventListener("focus", ()=>{
-  suppressStopForPdf = false;
+  if(!pdfModalOpen) suppressStopForPdf = false;
 });
 
 window.addEventListener("pagehide", ()=>{
   // モバイルだけ pagehide で停止
   if(isMobileLike()){
-    if(suppressStopForPdf) return;
+    if(shouldSuppressStop()) return;
     stopAudio(true);
   }
 });
