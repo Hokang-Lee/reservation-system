@@ -204,12 +204,15 @@ function openPdfForDevice(url, title){
     return;
   }
 
-  if(isAndroid() && /^https?:/i.test(window.location.protocol)){
-    openInNewTabOrCurrent(toGoogleDocsViewerUrl(url));
-  }else{
-    openInNewTabOrCurrent(url);
+  if(isAndroid()){
+    const viewerUrl = /^https?:/i.test(window.location.protocol)
+      ? toGoogleDocsViewerUrl(url)
+      : url;
+    openPdfModal(viewerUrl, title);
+    return;
   }
 
+  openInNewTabOrCurrent(url);
   setTimeout(()=>{ suppressStopForPdf = false; }, 5000);
 }
 
