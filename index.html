@@ -175,6 +175,13 @@ function stopIfSafe(){
   stopAudio(true);
 }
 
+function keepAudioPlaying(){
+  if(!viewerAudio || userStopped) return;
+  if(viewerAudio.paused){
+    viewerAudio.play().catch(()=>{});
+  }
+}
+
 function openPdfModal(url, title="文章表示"){
   const modal = document.getElementById("pdfModal");
   const frame = document.getElementById("pdfFrame");
@@ -183,8 +190,10 @@ function openPdfModal(url, title="文章表示"){
   ttl.textContent = title;
   suppressStopForPdf = true;
   pdfModalOpen = true;
+  frame.setAttribute("sandbox", "allow-scripts allow-same-origin allow-forms");
   modal.style.display = "block";
   frame.src = url;
+  keepAudioPlaying();
 }
 
 function toAbsoluteUrl(url){
@@ -224,8 +233,10 @@ function closePdfModal(){
   const frame = document.getElementById("pdfFrame");
   modal.style.display = "none";
   frame.src = "";
+  frame.removeAttribute("sandbox");
   pdfModalOpen = false;
   suppressStopForPdf = false;
+  keepAudioPlaying();
 }
 
 window.addEventListener("DOMContentLoaded", ()=>{
@@ -248,11 +259,20 @@ document.addEventListener("visibilitychange", ()=>{
 // pageshow: Android別タブから戻ったとき visibilitychange が来ない場合の保険
 window.addEventListener("pageshow", ()=>{
   if(!pdfModalOpen) suppressStopForPdf = false;
+  keepAudioPlaying();
 });
 
 window.addEventListener("focus", ()=>{
   if(!pdfModalOpen) suppressStopForPdf = false;
+  keepAudioPlaying();
 });
+
+window.addEventListener("blur", ()=>{
+  if(pdfModalOpen) keepAudioPlaying();
+});
+
+document.addEventListener("fullscreenchange", keepAudioPlaying);
+document.addEventListener("webkitfullscreenchange", keepAudioPlaying);
 
 window.addEventListener("pagehide", ()=>{
   // モバイルだけ pagehide で停止
@@ -371,6 +391,10 @@ async function loadAndPlayAudio(id, row, btn, seekWrap){
 
   audio.onpause = ()=>{
     if(viewerAudio !== audio) return;
+    if(shouldSuppressStop() && !userStopped){
+      setTimeout(keepAudioPlaying, 50);
+      return;
+    }
     if(userStopped){
       btn.textContent = "▶";
     }
