@@ -37,6 +37,7 @@ h1{
 .edit{ width:70px; text-align:center; }
 .empty-row{ border-left:6px solid #22c55e; }
 .filled-row{ border-left:6px solid #2563eb; }
+.readonly-row{ border-left:6px solid #9ca3af; }
 .playing{ outline:3px solid #f59e0b; background:#fff7ed; }
 
 /* ===== シークバー ===== */
@@ -451,13 +452,17 @@ function getRoundDay(dateStr){
 }
 
 function isTargetDate(dateStr){
+  return getRoundDay(dateStr) !== null;
+}
+
+function isReservationDate(dateStr){
   const n = getRoundDay(dateStr);
   if(n === null) return false;
   if(n === 1) return true;
 
   const d = parseDateLocal(dateStr);
   const day = d.getDay();
-  return day === 0 || day === 1; // 日・月のみ
+  return day === 0 || day === 1; // 日・月のみ予約可
 }
 
 function getStart(dateStr){
@@ -471,10 +476,6 @@ function getSeatList(dateStr){
   if(n === null) return [];
 
   if(n === 1) return [...FIRST_DAY_SEATS];
-
-  const d = parseDateLocal(dateStr);
-  const day = d.getDay();
-  if(day !== 0 && day !== 1) return [];
 
   const start = getStart(dateStr);
   return Array.from({length:NORMAL_SEAT_COUNT}, (_,i)=>start+i);
@@ -547,6 +548,7 @@ function render(data){
 
     const day = d.getDay();
     const isPast = d < today;
+    const canReserve = isReservationDate(date);
 
     const title = document.createElement("div");
     title.className = "title";
@@ -570,7 +572,7 @@ function render(data){
 
         const row = document.createElement("div");
         row.className = "row";
-        row.classList.add(name ? "filled-row" : "empty-row");
+        row.classList.add(canReserve && name ? "filled-row" : canReserve ? "empty-row" : "readonly-row");
         if(isPast) row.style.opacity = 0.5;
 
         const top = document.createElement("div");
@@ -633,22 +635,24 @@ function render(data){
     const MAX_SEAT_NO = 192;
     const seatList = getSeatList(date).filter(seat => seat <= MAX_SEAT_NO);
 
-    // 残り席
-    let used = 0;
-    seatList.forEach(seat => {
-      if(data?.[date]?.[seat]) used++;
-    });
-    const remain = seatList.length - used;
+    if(canReserve){
+      // 残り席
+      let used = 0;
+      seatList.forEach(seat => {
+        if(data?.[date]?.[seat]) used++;
+      });
+      const remain = seatList.length - used;
 
-    const remainDiv = document.createElement("div");
-    remainDiv.className = "remain";
-    remainDiv.innerHTML =
-      remain===0
-      ? `<span style="color:red;font-weight:bold;">満席</span>`
-      : `残り <b>${remain}</b> 席`;
+      const remainDiv = document.createElement("div");
+      remainDiv.className = "remain";
+      remainDiv.innerHTML =
+        remain===0
+        ? `<span style="color:red;font-weight:bold;">満席</span>`
+        : `残り <b>${remain}</b> 席`;
 
-    if(isPast) remainDiv.style.opacity = 0.5;
-    app.appendChild(remainDiv);
+      if(isPast) remainDiv.style.opacity = 0.5;
+      app.appendChild(remainDiv);
+    }
 
     seatList.forEach(seat => {
       const id   = formatSeat(seat);
@@ -656,7 +660,7 @@ function render(data){
 
       const row = document.createElement("div");
       row.className = "row";
-      row.classList.add(name ? "filled-row" : "empty-row");
+      row.classList.add(canReserve && name ? "filled-row" : canReserve ? "empty-row" : "readonly-row");
       if(isPast) row.style.opacity = 0.5;
 
       const top = document.createElement("div");
@@ -736,8 +740,10 @@ function render(data){
       edit.onclick = () => editNormalSeat(date, seat, name);
 
       row.appendChild(top);
-      row.appendChild(label);
-      row.appendChild(edit);
+      if(canReserve){
+        row.appendChild(label);
+        row.appendChild(edit);
+      }
       row.appendChild(seekWrap);
 
       app.appendChild(row);
