@@ -416,6 +416,7 @@ const ROUND_START = "2026-06-27";
 const ROUND_DAYS  = 40;
 const FIRST_DAY_SEATS = [1,2,3,4,5,6,7,8,9];
 const NORMAL_SEAT_COUNT = 5;
+const SPECIAL_RESERVATION_DATES = ["2026-09-12"];
 
 // 表示範囲（必要なら延長）
 const config = {
@@ -459,6 +460,7 @@ function isReservationDate(dateStr){
   const n = getRoundDay(dateStr);
   if(n === null) return false;
   if(n === 1) return true;
+  if(SPECIAL_RESERVATION_DATES.includes(dateStr)) return true;
 
   const d = parseDateLocal(dateStr);
   const day = d.getDay();
