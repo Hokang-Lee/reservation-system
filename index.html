@@ -641,15 +641,19 @@ function render(data){
       });
       const remain = seatList.length - used;
 
-      const remainDiv = document.createElement("div");
-      remainDiv.className = "remain";
-      remainDiv.innerHTML =
-        remain===0
-        ? `<span style="color:red;font-weight:bold;">満席</span>`
-        : `残り <b>${remain}</b> 席`;
+      const extraChallengeCount = seatList.length - remain;
+      if(isChallengeDay || extraChallengeCount > 0){
+        const remainDiv = document.createElement("div");
+        remainDiv.className = "remain";
+        remainDiv.innerHTML = isChallengeDay
+          ? (remain===0
+            ? `<span style="color:red;font-weight:bold;">満席</span>`
+            : `残り <b>${remain}</b> 席`)
+          : `追加チャレンジ <b>${extraChallengeCount}</b>`;
 
-      if(isPast) remainDiv.style.opacity = 0.5;
-      app.appendChild(remainDiv);
+        if(isPast) remainDiv.style.opacity = 0.5;
+        app.appendChild(remainDiv);
+      }
     }
 
     seatList.forEach(seat => {
