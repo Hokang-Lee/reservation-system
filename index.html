@@ -416,6 +416,7 @@ const ROUND_START = "2026-06-27";
 const ROUND_DAYS  = 40;
 const FIRST_DAY_SEATS = [1,2,3,4,5,6,7,8,9];
 const NORMAL_SEAT_COUNT = 5;
+const SPECIAL_RESERVATION_DATES = ["2026-09-12"];
 
 // 表示範囲（必要なら延長）
 const config = {
@@ -546,7 +547,7 @@ function render(data){
 
     const title = document.createElement("div");
     title.className = "title";
-    const isChallengeDay = roundDay !== 1 && (day === 0 || day === 1);
+    const isChallengeDay = roundDay !== 1 && (day === 0 || day === 1 || SPECIAL_RESERVATION_DATES.includes(date));
     const headingText = roundDay === 1
       ? "ラウンド初日 家庭盟誓訓読"
       : `ラウンド内${roundDay}日目${isChallengeDay ? " チャレンジデー" : ""}`;
@@ -728,7 +729,7 @@ function render(data){
 
       const label = document.createElement("div");
       label.className = "label";
-      label.textContent = name || "空き";
+      label.textContent = name || (isChallengeDay ? "空き" : "レギュラー");
       label.style.fontWeight = name ? "bold" : "";
 
       const edit = document.createElement("button");
