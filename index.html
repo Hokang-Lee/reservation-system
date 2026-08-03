@@ -416,10 +416,6 @@ const ROUND_START = "2026-06-27";
 const ROUND_DAYS  = 40;
 const FIRST_DAY_SEATS = [1,2,3,4,5,6,7,8,9];
 const NORMAL_SEAT_COUNT = 5;
-// 臨時に予約を受け付ける日。必要になったら "YYYY-MM-DD" を追加する。
-const SPECIAL_RESERVATION_DATES = [
-  "2026-09-12"
-];
 
 // 表示範囲（必要なら延長）
 const config = {
@@ -460,14 +456,7 @@ function isTargetDate(dateStr){
 }
 
 function isReservationDate(dateStr){
-  const n = getRoundDay(dateStr);
-  if(n === null) return false;
-  if(n === 1) return true;
-  if(SPECIAL_RESERVATION_DATES.includes(dateStr)) return true;
-
-  const d = parseDateLocal(dateStr);
-  const day = d.getDay();
-  return day === 0 || day === 1; // 日・月のみ予約可
+  return getRoundDay(dateStr) !== null;
 }
 
 function getStart(dateStr){
@@ -557,7 +546,10 @@ function render(data){
 
     const title = document.createElement("div");
     title.className = "title";
-    const headingText = roundDay === 1 ? "ラウンド初日 家庭盟誓訓読" : `ラウンド内${roundDay}日目`;
+    const isChallengeDay = roundDay !== 1 && (day === 0 || day === 1);
+    const headingText = roundDay === 1
+      ? "ラウンド初日 家庭盟誓訓読"
+      : `ラウンド内${roundDay}日目${isChallengeDay ? " チャレンジデー" : ""}`;
     title.textContent = `■ ${date}（${["日","月","火","水","木","金","土"][day]}） / ${headingText}`;
 
     if(day===0){
