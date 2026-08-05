@@ -177,6 +177,7 @@ function stopIfSafe(){
 }
 
 function keepAudioPlaying(){
+  if(document.visibilityState === "hidden") return;
   if(!viewerAudio || userStopped) return;
   if(viewerAudio.paused){
     viewerAudio.play().catch(()=>{});
@@ -250,9 +251,9 @@ window.addEventListener("DOMContentLoaded", ()=>{
 // ===== 画面離脱 =====
 document.addEventListener("visibilitychange", ()=>{
   if(document.visibilityState === "hidden"){
-    // モバイルだけ、非表示時に停止判定
+    // モバイルで画面を離れたら、文書表示中でも必ず停止する
     if(isMobileLike()){
-      stopIfSafe();
+      stopAudio(true);
     }
   }
 });
@@ -260,12 +261,12 @@ document.addEventListener("visibilitychange", ()=>{
 // pageshow: Android別タブから戻ったとき visibilitychange が来ない場合の保険
 window.addEventListener("pageshow", ()=>{
   if(!pdfModalOpen) suppressStopForPdf = false;
-  keepAudioPlaying();
+  if(pdfModalOpen) keepAudioPlaying();
 });
 
 window.addEventListener("focus", ()=>{
   if(!pdfModalOpen) suppressStopForPdf = false;
-  keepAudioPlaying();
+  if(pdfModalOpen) keepAudioPlaying();
 });
 
 window.addEventListener("blur", ()=>{
@@ -276,16 +277,15 @@ document.addEventListener("fullscreenchange", keepAudioPlaying);
 document.addEventListener("webkitfullscreenchange", keepAudioPlaying);
 
 window.addEventListener("pagehide", ()=>{
-  // モバイルだけ pagehide で停止
+  // モバイルで画面を離れたら、文書表示中でも必ず停止する
   if(isMobileLike()){
-    if(shouldSuppressStop()) return;
     stopAudio(true);
   }
 });
 
 window.addEventListener("beforeunload", ()=>{
   // ページを本当に離れる時は止める
-  stopIfSafe();
+  stopAudio(true);
 });
 
 // ===== シークバー補助 =====
@@ -392,7 +392,7 @@ async function loadAndPlayAudio(id, row, btn, seekWrap){
 
   audio.onpause = ()=>{
     if(viewerAudio !== audio) return;
-    if(shouldSuppressStop() && !userStopped){
+    if(shouldSuppressStop() && !userStopped && document.visibilityState !== "hidden"){
       setTimeout(keepAudioPlaying, 50);
       return;
     }
