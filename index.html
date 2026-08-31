@@ -76,6 +76,36 @@ button:hover{ background:#d1d5db; }
 }
 .edit-reserve:hover{ background:#1d4ed8; }
 
+/* ===== 名前入力 ===== */
+.name-dialog-backdrop{
+  display:none; position:fixed; inset:0; z-index:10000;
+  background:rgba(15,23,42,.55); padding:16px; box-sizing:border-box;
+  align-items:center; justify-content:center;
+}
+.name-dialog-backdrop.open{ display:flex; }
+.name-dialog{
+  width:min(440px,100%); background:#fff; border-radius:14px;
+  padding:20px; box-sizing:border-box; box-shadow:0 16px 40px rgba(0,0,0,.28);
+}
+.name-dialog h2{ margin:0 0 14px; font-size:21px; }
+.name-dialog label{ display:block; margin:12px 0 6px; font-weight:700; }
+.name-dialog select,.name-dialog input{
+  width:100%; min-height:48px; box-sizing:border-box; border:2px solid #94a3b8;
+  border-radius:9px; padding:9px 11px; background:#fff; font-size:18px;
+}
+.name-dialog select:focus,.name-dialog input:focus{
+  outline:3px solid rgba(37,99,235,.25); border-color:#2563eb;
+}
+.name-dialog-help{ margin:8px 0 0; color:#475569; font-size:14px; line-height:1.5; }
+.name-dialog-actions{ display:flex; gap:10px; justify-content:flex-end; margin-top:20px; }
+.name-dialog-actions button{ min-height:46px; padding:9px 18px; font-size:16px; }
+.name-dialog-save{ background:#2563eb; color:#fff; font-weight:700; }
+.name-dialog-save:hover{ background:#1d4ed8; }
+.name-history-clear{
+  margin-top:9px; padding:6px 2px; background:transparent; color:#475569;
+  text-decoration:underline; font-size:13px;
+}
+
 @media (max-width:768px){
   html, body{ height:100%; }
   body{
@@ -138,6 +168,26 @@ button:hover{ background:#d1d5db; }
 <h1>予習機能付き<br>訓読予約</h1>
 <div id="app"></div>
 
+<div id="nameDialogBackdrop" class="name-dialog-backdrop" role="presentation">
+  <form id="nameDialog" class="name-dialog" role="dialog" aria-modal="true" aria-labelledby="nameDialogTitle">
+    <h2 id="nameDialogTitle">予約する名前</h2>
+    <div id="rememberedNameArea">
+      <label for="rememberedNameSelect">前に入力した名前から選ぶ</label>
+      <select id="rememberedNameSelect">
+        <option value="">選んでください</option>
+      </select>
+      <button id="clearRememberedNames" class="name-history-clear" type="button">この端末に記憶した名前を消す</button>
+    </div>
+    <label for="reservationNameInput">名前</label>
+    <input id="reservationNameInput" type="text" maxlength="40" autocomplete="name">
+    <p class="name-dialog-help">新しい名前は直接入力できます。予約を取り消すときは、名前を空欄にしてください。</p>
+    <div class="name-dialog-actions">
+      <button id="cancelNameDialog" type="button">やめる</button>
+      <button class="name-dialog-save" type="submit">決定</button>
+    </div>
+  </form>
+</div>
+
 <div id="pdfModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75); z-index:9999;">
   <div style="position:absolute; inset:20px; background:#fff; border-radius:12px; overflow:hidden; display:flex; flex-direction:column;">
     <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 12px; background:#f3f4f6; border-bottom:1px solid #ddd;">
@@ -158,6 +208,87 @@ firebase.initializeApp({
   projectId:"reservation-2026"
 });
 const db = firebase.database();
+
+// 入力した名前はこの端末内だけに保存し、次回の候補として表示する。
+const REMEMBERED_NAMES_KEY = "reservationRememberedNames";
+const MAX_REMEMBERED_NAMES = 20;
+
+function getRememberedNames(){
+  try{
+    const names = JSON.parse(localStorage.getItem(REMEMBERED_NAMES_KEY) || "[]");
+    return Array.isArray(names) ? names.filter(name => typeof name === "string" && name.trim()) : [];
+  }catch(_){
+    return [];
+  }
+}
+
+function rememberName(name){
+  const trimmed = name.trim();
+  if(!trimmed) return;
+
+  const names = getRememberedNames().filter(saved => saved !== trimmed);
+  names.unshift(trimmed);
+  try{
+    localStorage.setItem(REMEMBERED_NAMES_KEY, JSON.stringify(names.slice(0, MAX_REMEMBERED_NAMES)));
+  }catch(_){}
+}
+
+function refreshRememberedNameSelect(){
+  const area = document.getElementById("rememberedNameArea");
+  const select = document.getElementById("rememberedNameSelect");
+  const names = getRememberedNames();
+
+  select.replaceChildren(new Option("選んでください", ""));
+  names.forEach(name => select.add(new Option(name, name)));
+  area.style.display = names.length ? "block" : "none";
+}
+
+function askReservationName(currentName = ""){
+  const backdrop = document.getElementById("nameDialogBackdrop");
+  const form = document.getElementById("nameDialog");
+  const input = document.getElementById("reservationNameInput");
+  const select = document.getElementById("rememberedNameSelect");
+  const cancel = document.getElementById("cancelNameDialog");
+  const clear = document.getElementById("clearRememberedNames");
+
+  refreshRememberedNameSelect();
+  input.value = currentName || "";
+  select.value = "";
+  backdrop.classList.add("open");
+  document.body.style.overflow = "hidden";
+  setTimeout(()=> input.focus(), 0);
+
+  return new Promise(resolve => {
+    const finish = value => {
+      backdrop.classList.remove("open");
+      document.body.style.overflow = "";
+      form.onsubmit = null;
+      cancel.onclick = null;
+      clear.onclick = null;
+      select.onchange = null;
+      backdrop.onkeydown = null;
+      resolve(value);
+    };
+
+    select.onchange = () => {
+      if(select.value) input.value = select.value;
+      input.focus();
+    };
+    clear.onclick = () => {
+      localStorage.removeItem(REMEMBERED_NAMES_KEY);
+      refreshRememberedNameSelect();
+      input.focus();
+    };
+    cancel.onclick = () => finish(null);
+    backdrop.onkeydown = event => {
+      if(event.key === "Escape") finish(null);
+    };
+    form.onsubmit = event => {
+      event.preventDefault();
+      finish(input.value);
+    };
+  });
+}
 
 function isIPhone(){
   const ua = navigator.userAgent || "";
@@ -551,7 +682,7 @@ function formatSeat(n){
   return String(n).padStart(3,"0");
 }
 
-function editNormalSeat(date, seat, currentName){
+async function editNormalSeat(date, seat, currentName){
   const d = parseDateLocal(date);
   const today = new Date();
   today.setHours(0,0,0,0);
@@ -561,12 +692,17 @@ function editNormalSeat(date, seat, currentName){
     return;
   }
 
-  const input = prompt("名前入力", currentName || "");
+  const input = await askReservationName(currentName || "");
   if(input === null) return;
 
   const ref = db.ref(`reservations/${date}/${seat}`);
   const trimmed = input.trim();
-  trimmed === "" ? ref.remove() : ref.set(trimmed);
+  if(trimmed === ""){
+    ref.remove();
+  }else{
+    rememberName(trimmed);
+    ref.set(trimmed);
+  }
 }
 function render(data){
   const app = document.getElementById("app");
@@ -645,13 +781,13 @@ function render(data){
         edit.className = `edit ${name ? "edit-existing" : "edit-reserve"}`;
         edit.textContent = name ? "編集" : "予約";
 
-        edit.onclick = () => {
+        edit.onclick = async () => {
           if(isPast){
             alert("過去の予約は変更できません");
             return;
           }
 
-          const input = prompt("名前入力", name);
+          const input = await askReservationName(name);
           if(input === null) return;
 
           const trimmed = input.trim();
@@ -669,6 +805,7 @@ function render(data){
             if(!ok) return;
           }
 
+          rememberName(trimmed);
           ref.set(trimmed);
         };
 
