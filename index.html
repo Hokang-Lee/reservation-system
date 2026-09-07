@@ -921,7 +921,6 @@ function render(data){
       pdfBtn.title = "PDFを開く";
       pdfBtn.onclick = () => {
         suppressStopForPdf = true;
-        userStopped = false;
 
         const url = `docs/${id}.pdf`;
 
@@ -935,7 +934,6 @@ function render(data){
       doc2Btn.style.fontSize = "11px";
       doc2Btn.onclick = () => {
         suppressStopForPdf = true;
-        userStopped = false;
 
         const url = `docs2/${id}.pdf`;
 
