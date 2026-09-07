@@ -192,7 +192,10 @@ button:hover{ background:#d1d5db; }
   <div style="position:absolute; inset:20px; background:#fff; border-radius:12px; overflow:hidden; display:flex; flex-direction:column;">
     <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 12px; background:#f3f4f6; border-bottom:1px solid #ddd;">
       <div id="pdfModalTitle" style="font-weight:bold;">文章表示</div>
-      <button id="closePdfModal" style="padding:6px 10px;">閉じる</button>
+      <div style="display:flex; gap:8px;">
+        <button id="reloadPdfModal" style="padding:8px 12px; font-weight:bold;">再表示</button>
+        <button id="closePdfModal" style="padding:8px 12px;">閉じる</button>
+      </div>
     </div>
     <iframe id="pdfFrame" style="flex:1; width:100%; border:none;"></iframe>
   </div>
@@ -310,6 +313,7 @@ let seekTimer    = null;
 // PDF/実ページを開いている間は停止抑止
 let suppressStopForPdf = false;
 let pdfModalOpen = false;
+let currentPdfModalUrl = null;
 
 function isMobileLike(){
   const ua = navigator.userAgent || "";
@@ -375,6 +379,18 @@ function keepAudioPlaying(){
   }
 }
 
+function loadPdfModalFrame(){
+  if(!currentPdfModalUrl) return;
+  const frame = document.getElementById("pdfFrame");
+  const reloadUrl = new URL(currentPdfModalUrl, window.location.href);
+  reloadUrl.searchParams.set("_reload", Date.now());
+
+  frame.src = "about:blank";
+  requestAnimationFrame(()=> {
+    frame.src = reloadUrl.href;
+  });
+}
+
 function openPdfModal(url, title="文章表示"){
   const modal = document.getElementById("pdfModal");
   const frame = document.getElementById("pdfFrame");
@@ -383,9 +399,10 @@ function openPdfModal(url, title="文章表示"){
   ttl.textContent = title;
   suppressStopForPdf = true;
   pdfModalOpen = true;
+  currentPdfModalUrl = url;
   frame.setAttribute("sandbox", "allow-scripts allow-same-origin allow-forms");
   modal.style.display = "block";
-  frame.src = url;
+  loadPdfModalFrame();
   keepAudioPlaying();
 }
 
@@ -428,14 +445,19 @@ function closePdfModal(){
   frame.src = "";
   frame.removeAttribute("sandbox");
   pdfModalOpen = false;
+  currentPdfModalUrl = null;
   suppressStopForPdf = false;
   keepAudioPlaying();
 }
 
 window.addEventListener("DOMContentLoaded", ()=>{
   const closeBtn = document.getElementById("closePdfModal");
+  const reloadBtn = document.getElementById("reloadPdfModal");
   if(closeBtn){
     closeBtn.onclick = closePdfModal;
+  }
+  if(reloadBtn){
+    reloadBtn.onclick = loadPdfModalFrame;
   }
 });
 
