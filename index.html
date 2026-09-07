@@ -373,7 +373,6 @@ function stopIfSafe(){
 }
 
 function keepAudioPlaying(){
-  if(document.visibilityState === "hidden") return;
   if(!viewerAudio || userStopped) return;
   if(viewerAudio.paused){
     viewerAudio.play().catch(()=>{});
@@ -463,8 +462,8 @@ window.addEventListener("DOMContentLoaded", ()=>{
 // ===== 画面離脱 =====
 document.addEventListener("visibilitychange", ()=>{
   if(document.visibilityState === "hidden"){
-    // モバイルで画面を離れたら、文書表示中でも必ず停止する
-    if(isMobileLike()){
+    // 文書モーダルの表示中は、AndroidのPDF表示による一時的な画面離脱を無視する
+    if(isMobileLike() && !shouldSuppressStop()){
       stopAudio(true);
     }
   }
@@ -489,8 +488,8 @@ document.addEventListener("fullscreenchange", keepAudioPlaying);
 document.addEventListener("webkitfullscreenchange", keepAudioPlaying);
 
 window.addEventListener("pagehide", ()=>{
-  // モバイルで画面を離れたら、文書表示中でも必ず停止する
-  if(isMobileLike()){
+  // 文書モーダルの表示中は音声を維持する
+  if(isMobileLike() && !shouldSuppressStop()){
     stopAudio(true);
   }
 });
@@ -609,7 +608,7 @@ async function loadAndPlayAudio(id, row, btn, seekWrap){
 
   audio.onpause = ()=>{
     if(viewerAudio !== audio) return;
-    if(shouldSuppressStop() && !userStopped && document.visibilityState !== "hidden"){
+    if(shouldSuppressStop() && !userStopped){
       setTimeout(keepAudioPlaying, 50);
       return;
     }
