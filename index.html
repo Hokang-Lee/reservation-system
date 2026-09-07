@@ -193,6 +193,7 @@ button:hover{ background:#d1d5db; }
     <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 12px; background:#f3f4f6; border-bottom:1px solid #ddd;">
       <div id="pdfModalTitle" style="font-weight:bold;">文章表示</div>
       <div style="display:flex; gap:8px;">
+        <button id="openPdfDirectly" style="padding:8px 12px; font-weight:bold;">別画面</button>
         <button id="reloadPdfModal" style="padding:8px 12px; font-weight:bold;">再表示</button>
         <button id="closePdfModal" style="padding:8px 12px;">閉じる</button>
       </div>
@@ -391,6 +392,10 @@ function loadPdfModalFrame(){
   });
 }
 
+function openCurrentPdfDirectly(){
+  if(currentPdfModalUrl) openInNewTabOrCurrent(currentPdfModalUrl);
+}
+
 function openPdfModal(url, title="文章表示"){
   const modal = document.getElementById("pdfModal");
   const frame = document.getElementById("pdfFrame");
@@ -399,8 +404,7 @@ function openPdfModal(url, title="文章表示"){
   ttl.textContent = title;
   suppressStopForPdf = true;
   pdfModalOpen = true;
-  currentPdfModalUrl = url;
-  frame.setAttribute("sandbox", "allow-scripts allow-same-origin allow-forms");
+  currentPdfModalUrl = toAbsoluteUrl(url);
   modal.style.display = "block";
   loadPdfModalFrame();
   keepAudioPlaying();
@@ -408,11 +412,6 @@ function openPdfModal(url, title="文章表示"){
 
 function toAbsoluteUrl(url){
   return new URL(url, window.location.href).href;
-}
-
-function toGoogleDocsViewerUrl(url){
-  const absoluteUrl = toAbsoluteUrl(url);
-  return `https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(absoluteUrl)}`;
 }
 
 function openInNewTabOrCurrent(url){
@@ -427,10 +426,7 @@ function openPdfForDevice(url, title){
   }
 
   if(isAndroid()){
-    const viewerUrl = /^https?:/i.test(window.location.protocol)
-      ? toGoogleDocsViewerUrl(url)
-      : url;
-    openPdfModal(viewerUrl, title);
+    openPdfModal(url, title);
     return;
   }
 
@@ -443,7 +439,6 @@ function closePdfModal(){
   const frame = document.getElementById("pdfFrame");
   modal.style.display = "none";
   frame.src = "";
-  frame.removeAttribute("sandbox");
   pdfModalOpen = false;
   currentPdfModalUrl = null;
   suppressStopForPdf = false;
@@ -453,11 +448,15 @@ function closePdfModal(){
 window.addEventListener("DOMContentLoaded", ()=>{
   const closeBtn = document.getElementById("closePdfModal");
   const reloadBtn = document.getElementById("reloadPdfModal");
+  const directBtn = document.getElementById("openPdfDirectly");
   if(closeBtn){
     closeBtn.onclick = closePdfModal;
   }
   if(reloadBtn){
     reloadBtn.onclick = loadPdfModalFrame;
+  }
+  if(directBtn){
+    directBtn.onclick = openCurrentPdfDirectly;
   }
 });
 
