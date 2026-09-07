@@ -920,6 +920,7 @@ function render(data){
       pdfBtn.textContent = "文章";
       pdfBtn.title = "PDFを開く";
       pdfBtn.onclick = () => {
+        if(currentDocId && currentDocId !== id) stopAudio(true);
         suppressStopForPdf = true;
 
         const url = `docs/${id}.pdf`;
@@ -933,6 +934,7 @@ function render(data){
       doc2Btn.title = "実ページを開く";
       doc2Btn.style.fontSize = "11px";
       doc2Btn.onclick = () => {
+        if(currentDocId && currentDocId !== id) stopAudio(true);
         suppressStopForPdf = true;
 
         const url = `docs2/${id}.pdf`;
