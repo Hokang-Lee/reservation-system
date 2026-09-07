@@ -105,6 +105,22 @@ button:hover{ background:#d1d5db; }
   margin-top:9px; padding:6px 2px; background:transparent; color:#475569;
   text-decoration:underline; font-size:13px;
 }
+.pdf-canvas-container{
+  display:none; flex:1; overflow:auto; padding:10px; box-sizing:border-box;
+  background:#cbd5e1; -webkit-overflow-scrolling:touch;
+}
+.pdf-canvas-container canvas{
+  display:block; max-width:100%; height:auto; margin:0 auto 12px;
+  background:#fff; box-shadow:0 2px 8px rgba(0,0,0,.2);
+}
+.pdf-status{
+  margin:24px auto; padding:16px; max-width:420px; border-radius:10px;
+  background:#fff; text-align:center; font-size:17px; line-height:1.6;
+}
+.pdf-status a{
+  display:inline-block; margin-top:12px; padding:10px 14px; border-radius:8px;
+  background:#2563eb; color:#fff; font-weight:bold; text-decoration:none;
+}
 
 @media (max-width:768px){
   html, body{ height:100%; }
@@ -195,11 +211,13 @@ button:hover{ background:#d1d5db; }
       <button id="closePdfModal" style="padding:6px 10px;">閉じる</button>
     </div>
     <iframe id="pdfFrame" style="flex:1; width:100%; border:none;"></iframe>
+    <div id="pdfCanvasContainer" class="pdf-canvas-container" aria-live="polite"></div>
   </div>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
 <script>
 firebase.initializeApp({
   apiKey:"AIzaSyDvjXQ5xX_jwcHcXnESjjJalCq2xqL2qIw",
@@ -208,6 +226,10 @@ firebase.initializeApp({
   projectId:"reservation-2026"
 });
 const db = firebase.database();
+const PDFJS_WORKER_URL = "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js";
+if(window.pdfjsLib){
+  window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER_URL;
+}
 
 // 入力した名前はこの端末内だけに保存し、次回の候補として表示する。
 const REMEMBERED_NAMES_KEY = "reservationRememberedNames";
@@ -310,6 +332,8 @@ let seekTimer    = null;
 // PDF/実ページを開いている間は停止抑止
 let suppressStopForPdf = false;
 let pdfModalOpen = false;
+let pdfRenderGeneration = 0;
+let currentPdfLoadingTask = null;
 
 function isMobileLike(){
   const ua = navigator.userAgent || "";
@@ -378,15 +402,94 @@ function keepAudioPlaying(){
 function openPdfModal(url, title="文章表示"){
   const modal = document.getElementById("pdfModal");
   const frame = document.getElementById("pdfFrame");
+  const canvasContainer = document.getElementById("pdfCanvasContainer");
   const ttl   = document.getElementById("pdfModalTitle");
 
   ttl.textContent = title;
   suppressStopForPdf = true;
   pdfModalOpen = true;
+  canvasContainer.style.display = "none";
+  canvasContainer.replaceChildren();
+  frame.style.display = "block";
   frame.setAttribute("sandbox", "allow-scripts allow-same-origin allow-forms");
   modal.style.display = "block";
   frame.src = url;
   keepAudioPlaying();
+}
+
+async function openPdfCanvasModal(url, title="文章表示"){
+  const modal = document.getElementById("pdfModal");
+  const frame = document.getElementById("pdfFrame");
+  const container = document.getElementById("pdfCanvasContainer");
+  const ttl = document.getElementById("pdfModalTitle");
+  const absoluteUrl = toAbsoluteUrl(url);
+  const generation = ++pdfRenderGeneration;
+
+  ttl.textContent = title;
+  suppressStopForPdf = true;
+  pdfModalOpen = true;
+  frame.src = "";
+  frame.style.display = "none";
+  frame.removeAttribute("sandbox");
+  container.style.display = "block";
+  modal.style.display = "block";
+
+  const status = document.createElement("div");
+  status.className = "pdf-status";
+  status.textContent = "文書を読み込んでいます…";
+  container.replaceChildren(status);
+  keepAudioPlaying();
+
+  try{
+    if(!window.pdfjsLib) throw new Error("PDF.jsを読み込めませんでした");
+
+    currentPdfLoadingTask = window.pdfjsLib.getDocument({ url:absoluteUrl });
+    const pdf = await currentPdfLoadingTask.promise;
+    if(generation !== pdfRenderGeneration) return;
+
+    container.replaceChildren();
+    for(let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber++){
+      const page = await pdf.getPage(pageNumber);
+      if(generation !== pdfRenderGeneration) return;
+
+      const baseViewport = page.getViewport({ scale:1 });
+      const availableWidth = Math.max(container.clientWidth - 20, 280);
+      const scale = Math.min(2, availableWidth / baseViewport.width);
+      const viewport = page.getViewport({ scale });
+      const outputScale = Math.min(window.devicePixelRatio || 1, 2);
+      const canvas = document.createElement("canvas");
+      const context = canvas.getContext("2d");
+
+      canvas.width = Math.floor(viewport.width * outputScale);
+      canvas.height = Math.floor(viewport.height * outputScale);
+      canvas.style.width = `${Math.floor(viewport.width)}px`;
+      canvas.style.height = `${Math.floor(viewport.height)}px`;
+      canvas.setAttribute("role", "img");
+      canvas.setAttribute("aria-label", `${title} ${pageNumber}ページ目`);
+      container.appendChild(canvas);
+
+      await page.render({
+        canvasContext:context,
+        transform:outputScale !== 1 ? [outputScale,0,0,outputScale,0,0] : null,
+        viewport
+      }).promise;
+    }
+    keepAudioPlaying();
+  }catch(error){
+    if(generation !== pdfRenderGeneration) return;
+    status.textContent = "文書を表示できませんでした。通信状態を確認して、もう一度お試しください。";
+    const directLink = document.createElement("a");
+    directLink.href = absoluteUrl;
+    directLink.target = "_blank";
+    directLink.rel = "noopener";
+    directLink.textContent = "PDFを直接開く";
+    status.appendChild(document.createElement("br"));
+    status.appendChild(directLink);
+    container.replaceChildren(status);
+    console.error("PDF render failed", error);
+  }finally{
+    if(generation === pdfRenderGeneration) currentPdfLoadingTask = null;
+  }
 }
 
 function toAbsoluteUrl(url){
@@ -410,10 +513,7 @@ function openPdfForDevice(url, title){
   }
 
   if(isAndroid()){
-    const viewerUrl = /^https?:/i.test(window.location.protocol)
-      ? toGoogleDocsViewerUrl(url)
-      : url;
-    openPdfModal(viewerUrl, title);
+    openPdfCanvasModal(url, title);
     return;
   }
 
@@ -424,9 +524,18 @@ function openPdfForDevice(url, title){
 function closePdfModal(){
   const modal = document.getElementById("pdfModal");
   const frame = document.getElementById("pdfFrame");
+  const container = document.getElementById("pdfCanvasContainer");
+  pdfRenderGeneration++;
+  if(currentPdfLoadingTask){
+    currentPdfLoadingTask.destroy().catch(()=>{});
+    currentPdfLoadingTask = null;
+  }
   modal.style.display = "none";
   frame.src = "";
+  frame.style.display = "block";
   frame.removeAttribute("sandbox");
+  container.style.display = "none";
+  container.replaceChildren();
   pdfModalOpen = false;
   suppressStopForPdf = false;
   keepAudioPlaying();
@@ -920,6 +1029,7 @@ function render(data){
       pdfBtn.textContent = "文章";
       pdfBtn.title = "PDFを開く";
       pdfBtn.onclick = () => {
+        if(currentDocId && currentDocId !== id) stopAudio(true);
         suppressStopForPdf = true;
 
         const url = `docs/${id}.pdf`;
@@ -933,6 +1043,7 @@ function render(data){
       doc2Btn.title = "実ページを開く";
       doc2Btn.style.fontSize = "11px";
       doc2Btn.onclick = () => {
+        if(currentDocId && currentDocId !== id) stopAudio(true);
         suppressStopForPdf = true;
 
         const url = `docs2/${id}.pdf`;
