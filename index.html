@@ -105,11 +105,6 @@ button:hover{ background:#d1d5db; }
   margin-top:9px; padding:6px 2px; background:transparent; color:#475569;
   text-decoration:underline; font-size:13px;
 }
-.pdf-modal-panel{
-  position:absolute; inset:20px; background:#fff; border-radius:12px;
-  overflow:hidden; display:flex; flex-direction:column;
-}
-.pdf-modal-panel.expanded{ inset:0; border-radius:0; }
 
 @media (max-width:768px){
   html, body{ height:100%; }
@@ -194,14 +189,10 @@ button:hover{ background:#d1d5db; }
 </div>
 
 <div id="pdfModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75); z-index:9999;">
-  <div id="pdfModalPanel" class="pdf-modal-panel">
+  <div style="position:absolute; inset:20px; background:#fff; border-radius:12px; overflow:hidden; display:flex; flex-direction:column;">
     <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 12px; background:#f3f4f6; border-bottom:1px solid #ddd;">
       <div id="pdfModalTitle" style="font-weight:bold;">文章表示</div>
-      <div style="display:flex; gap:8px;">
-        <button id="expandPdfModal" style="padding:8px 12px; font-weight:bold;">画面拡大</button>
-        <button id="reloadPdfModal" style="padding:8px 12px; font-weight:bold;">再表示</button>
-        <button id="closePdfModal" style="padding:8px 12px;">閉じる</button>
-      </div>
+      <button id="closePdfModal" style="padding:6px 10px;">閉じる</button>
     </div>
     <iframe id="pdfFrame" style="flex:1; width:100%; border:none;"></iframe>
   </div>
@@ -319,7 +310,6 @@ let seekTimer    = null;
 // PDF/実ページを開いている間は停止抑止
 let suppressStopForPdf = false;
 let pdfModalOpen = false;
-let currentPdfModalUrl = null;
 
 function isMobileLike(){
   const ua = navigator.userAgent || "";
@@ -378,29 +368,11 @@ function stopIfSafe(){
 }
 
 function keepAudioPlaying(){
+  if(document.visibilityState === "hidden") return;
   if(!viewerAudio || userStopped) return;
   if(viewerAudio.paused){
     viewerAudio.play().catch(()=>{});
   }
-}
-
-function loadPdfModalFrame(){
-  if(!currentPdfModalUrl) return;
-  const frame = document.getElementById("pdfFrame");
-  const reloadUrl = new URL(currentPdfModalUrl, window.location.href);
-  reloadUrl.searchParams.set("_reload", Date.now());
-
-  frame.src = "about:blank";
-  requestAnimationFrame(()=> {
-    frame.src = reloadUrl.href;
-  });
-}
-
-function togglePdfModalSize(){
-  const panel = document.getElementById("pdfModalPanel");
-  const button = document.getElementById("expandPdfModal");
-  const isExpanded = panel.classList.toggle("expanded");
-  button.textContent = isExpanded ? "元の大きさ" : "画面拡大";
 }
 
 function openPdfModal(url, title="文章表示"){
@@ -411,14 +383,19 @@ function openPdfModal(url, title="文章表示"){
   ttl.textContent = title;
   suppressStopForPdf = true;
   pdfModalOpen = true;
-  currentPdfModalUrl = toAbsoluteUrl(url);
+  frame.setAttribute("sandbox", "allow-scripts allow-same-origin allow-forms");
   modal.style.display = "block";
-  loadPdfModalFrame();
+  frame.src = url;
   keepAudioPlaying();
 }
 
 function toAbsoluteUrl(url){
   return new URL(url, window.location.href).href;
+}
+
+function toGoogleDocsViewerUrl(url){
+  const absoluteUrl = toAbsoluteUrl(url);
+  return `https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(absoluteUrl)}`;
 }
 
 function openInNewTabOrCurrent(url){
@@ -433,7 +410,10 @@ function openPdfForDevice(url, title){
   }
 
   if(isAndroid()){
-    openPdfModal(url, title);
+    const viewerUrl = /^https?:/i.test(window.location.protocol)
+      ? toGoogleDocsViewerUrl(url)
+      : url;
+    openPdfModal(viewerUrl, title);
     return;
   }
 
@@ -443,38 +423,27 @@ function openPdfForDevice(url, title){
 
 function closePdfModal(){
   const modal = document.getElementById("pdfModal");
-  const panel = document.getElementById("pdfModalPanel");
   const frame = document.getElementById("pdfFrame");
   modal.style.display = "none";
   frame.src = "";
+  frame.removeAttribute("sandbox");
   pdfModalOpen = false;
-  currentPdfModalUrl = null;
-  panel.classList.remove("expanded");
-  document.getElementById("expandPdfModal").textContent = "画面拡大";
   suppressStopForPdf = false;
   keepAudioPlaying();
 }
 
 window.addEventListener("DOMContentLoaded", ()=>{
   const closeBtn = document.getElementById("closePdfModal");
-  const reloadBtn = document.getElementById("reloadPdfModal");
-  const expandBtn = document.getElementById("expandPdfModal");
   if(closeBtn){
     closeBtn.onclick = closePdfModal;
-  }
-  if(reloadBtn){
-    reloadBtn.onclick = loadPdfModalFrame;
-  }
-  if(expandBtn){
-    expandBtn.onclick = togglePdfModalSize;
   }
 });
 
 // ===== 画面離脱 =====
 document.addEventListener("visibilitychange", ()=>{
   if(document.visibilityState === "hidden"){
-    // 文書モーダルの表示中は、AndroidのPDF表示による一時的な画面離脱を無視する
-    if(isMobileLike() && !shouldSuppressStop()){
+    // モバイルで画面を離れたら、文書表示中でも必ず停止する
+    if(isMobileLike()){
       stopAudio(true);
     }
   }
@@ -499,8 +468,8 @@ document.addEventListener("fullscreenchange", keepAudioPlaying);
 document.addEventListener("webkitfullscreenchange", keepAudioPlaying);
 
 window.addEventListener("pagehide", ()=>{
-  // 文書モーダルの表示中は音声を維持する
-  if(isMobileLike() && !shouldSuppressStop()){
+  // モバイルで画面を離れたら、文書表示中でも必ず停止する
+  if(isMobileLike()){
     stopAudio(true);
   }
 });
@@ -619,7 +588,7 @@ async function loadAndPlayAudio(id, row, btn, seekWrap){
 
   audio.onpause = ()=>{
     if(viewerAudio !== audio) return;
-    if(shouldSuppressStop() && !userStopped){
+    if(shouldSuppressStop() && !userStopped && document.visibilityState !== "hidden"){
       setTimeout(keepAudioPlaying, 50);
       return;
     }
@@ -951,7 +920,6 @@ function render(data){
       pdfBtn.textContent = "文章";
       pdfBtn.title = "PDFを開く";
       pdfBtn.onclick = () => {
-        if(currentDocId && currentDocId !== id) stopAudio(true);
         suppressStopForPdf = true;
 
         const url = `docs/${id}.pdf`;
@@ -965,7 +933,6 @@ function render(data){
       doc2Btn.title = "実ページを開く";
       doc2Btn.style.fontSize = "11px";
       doc2Btn.onclick = () => {
-        if(currentDocId && currentDocId !== id) stopAudio(true);
         suppressStopForPdf = true;
 
         const url = `docs2/${id}.pdf`;
