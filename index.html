@@ -320,6 +320,13 @@ function shouldSuppressStop(){
   return suppressStopForPdf || pdfModalOpen;
 }
 
+function setPlayButtonState(btn, id, isPlaying){
+  if(!btn) return;
+  btn.textContent = isPlaying ? "⏸" : "▶";
+  btn.title = isPlaying ? "音声を一時停止" : "音声を再生";
+  btn.setAttribute("aria-label", `音声 ${id} を${isPlaying ? "一時停止" : "再生"}`);
+}
+
 // ===== 停止 =====
 function stopAudio(intentional = true){
   userStopped = intentional;
@@ -349,7 +356,7 @@ function stopAudio(intentional = true){
     if(dur) dur.textContent = "0:00";
   });
 
-  if(currentBtn) currentBtn.textContent = "▶";
+  setPlayButtonState(currentBtn, currentDocId, false);
   currentBtn = null;
   currentRow = null;
   currentDocId = null;
@@ -572,7 +579,12 @@ async function loadAndPlayAudio(id, row, btn, seekWrap){
     }
   }, 200);
 
-  btn.textContent = "⏸";
+  setPlayButtonState(btn, id, true);
+
+  audio.onplay = ()=>{
+    if(viewerAudio !== audio) return;
+    setPlayButtonState(btn, id, true);
+  };
 
   audio.onpause = ()=>{
     if(viewerAudio !== audio) return;
@@ -580,9 +592,7 @@ async function loadAndPlayAudio(id, row, btn, seekWrap){
       setTimeout(keepAudioPlaying, 50);
       return;
     }
-    if(userStopped){
-      btn.textContent = "▶";
-    }
+    setPlayButtonState(btn, id, false);
   };
 
   audio.onended = ()=>{
@@ -877,8 +887,22 @@ function render(data){
       btn.title = "音声を再生";
       btn.setAttribute("aria-label", `音声 ${id} を再生`);
       btn.onclick = async () => {
-        if(currentDocId === id && viewerAudio && !viewerAudio.paused){
-          stopAudio(true);
+        if(currentDocId === id && viewerAudio){
+          if(viewerAudio.paused){
+            userStopped = false;
+            try{
+              await viewerAudio.play();
+              setPlayButtonState(btn, id, true);
+            }catch{
+              userStopped = true;
+              setPlayButtonState(btn, id, false);
+              alert("音声を再開できませんでした。もう一度お試しください。");
+            }
+          }else{
+            userStopped = true;
+            viewerAudio.pause();
+            setPlayButtonState(btn, id, false);
+          }
           return;
         }
         stopAudio(true);
