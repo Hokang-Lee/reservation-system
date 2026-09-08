@@ -70,6 +70,10 @@ button{
   border-radius:8px; cursor:pointer; transition:.2s;
 }
 button:hover{ background:#d1d5db; }
+.play-with-doc{
+  background:#dbeafe; color:#1e40af; font-weight:700;
+}
+.play-with-doc:hover{ background:#bfdbfe; }
 .edit-reserve{
   background:#2563eb; color:#fff; font-weight:700;
   box-shadow:0 2px 5px rgba(37,99,235,.25);
@@ -714,6 +718,34 @@ async function loadAndPlayAudio(id, row, btn, seekWrap){
   currentBtn = btn;
 }
 
+async function ensureMatchingAudioPlaying(id, row, btn, seekWrap){
+  if(currentDocId === id && viewerAudio){
+    if(!viewerAudio.paused) return true;
+
+    userStopped = false;
+    try{
+      await viewerAudio.play();
+      setPlayButtonState(btn, id, true);
+      return true;
+    }catch{
+      userStopped = true;
+      setPlayButtonState(btn, id, false);
+      alert("音声を再開できませんでした。もう一度お試しください。");
+      return false;
+    }
+  }
+
+  stopAudio(true);
+  try{
+    await loadAndPlayAudio(id, row, btn, seekWrap);
+    currentDocId = id;
+    return true;
+  }catch{
+    stopAudio(true);
+    return false;
+  }
+}
+
 // ===== 予約ロジック用 =====
 const ROUND_START = "2026-06-27";
 const ROUND_DAYS  = 40;
@@ -1025,11 +1057,12 @@ function render(data){
       };
 
       const pdfBtn = document.createElement("button");
-      pdfBtn.className = "play";
-      pdfBtn.textContent = "文章";
-      pdfBtn.title = "PDFを開く";
-      pdfBtn.onclick = () => {
-        if(currentDocId && currentDocId !== id) stopAudio(true);
+      pdfBtn.className = "play play-with-doc";
+      pdfBtn.textContent = "▶文章";
+      pdfBtn.title = "音声を再生して文章を開く";
+      pdfBtn.setAttribute("aria-label", `音声 ${id} を再生して文章を開く`);
+      pdfBtn.onclick = async () => {
+        if(!await ensureMatchingAudioPlaying(id, row, btn, seekWrap)) return;
         suppressStopForPdf = true;
 
         const url = `docs/${id}.pdf`;
@@ -1038,12 +1071,13 @@ function render(data){
       };
 
       const doc2Btn = document.createElement("button");
-      doc2Btn.className = "play";
-      doc2Btn.textContent = "実ページ";
-      doc2Btn.title = "実ページを開く";
+      doc2Btn.className = "play play-with-doc";
+      doc2Btn.textContent = "▶実頁";
+      doc2Btn.title = "音声を再生して実ページを開く";
+      doc2Btn.setAttribute("aria-label", `音声 ${id} を再生して実ページを開く`);
       doc2Btn.style.fontSize = "11px";
-      doc2Btn.onclick = () => {
-        if(currentDocId && currentDocId !== id) stopAudio(true);
+      doc2Btn.onclick = async () => {
+        if(!await ensureMatchingAudioPlaying(id, row, btn, seekWrap)) return;
         suppressStopForPdf = true;
 
         const url = `docs2/${id}.pdf`;
