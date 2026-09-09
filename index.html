@@ -508,7 +508,12 @@ function toAbsoluteUrl(url){
   return new URL(url, window.location.href).href;
 }
 
-function openPdfForDevice(url, title){
+function prepareDesktopPdfWindow(){
+  if(window.location.protocol === "file:" || isIPhone() || isAndroid()) return null;
+  return window.open("about:blank", "reservationDocumentViewer");
+}
+
+function openPdfForDevice(url, title, preparedWindow=null){
   // index.htmlをPCで直接開いた場合、PDF.jsはfile://のPDFを取得できないため
   // ブラウザ内蔵のPDF表示へ切り替える。
   if(window.location.protocol === "file:"){
@@ -521,8 +526,22 @@ function openPdfForDevice(url, title){
     return;
   }
 
-  // AndroidとPCは同一ページ内で描画し、PDFタブが増え続けるのを防ぐ
-  openPdfCanvasModal(url, title);
+  if(isAndroid()){
+    openPdfCanvasModal(url, title);
+    return;
+  }
+
+  // PCではブラウザ標準のPDF表示を使い、同じ文書タブを再利用する。
+  const pdfWindow = preparedWindow && !preparedWindow.closed
+    ? preparedWindow
+    : window.open("about:blank", "reservationDocumentViewer");
+  if(pdfWindow){
+    pdfWindow.location.replace(toAbsoluteUrl(url));
+    pdfWindow.focus();
+  }else{
+    openPdfModal(url, title, false);
+  }
+  setTimeout(()=>{ suppressStopForPdf = false; }, 5000);
 }
 
 function closePdfModal(){
@@ -1062,12 +1081,16 @@ function render(data){
       pdfBtn.title = "音声を再生して文章を開く";
       pdfBtn.setAttribute("aria-label", `音声 ${id} を再生して文章を開く`);
       pdfBtn.onclick = async () => {
-        if(!await ensureMatchingAudioPlaying(id, row, btn, seekWrap)) return;
+        const preparedWindow = prepareDesktopPdfWindow();
+        if(!await ensureMatchingAudioPlaying(id, row, btn, seekWrap)){
+          if(preparedWindow && !preparedWindow.closed) preparedWindow.close();
+          return;
+        }
         suppressStopForPdf = true;
 
         const url = `docs/${id}.pdf`;
 
-        openPdfForDevice(url, `文章 ${id}`);
+        openPdfForDevice(url, `文章 ${id}`, preparedWindow);
       };
 
       const doc2Btn = document.createElement("button");
@@ -1077,12 +1100,16 @@ function render(data){
       doc2Btn.setAttribute("aria-label", `音声 ${id} を再生して実ページを開く`);
       doc2Btn.style.fontSize = "11px";
       doc2Btn.onclick = async () => {
-        if(!await ensureMatchingAudioPlaying(id, row, btn, seekWrap)) return;
+        const preparedWindow = prepareDesktopPdfWindow();
+        if(!await ensureMatchingAudioPlaying(id, row, btn, seekWrap)){
+          if(preparedWindow && !preparedWindow.closed) preparedWindow.close();
+          return;
+        }
         suppressStopForPdf = true;
 
         const url = `docs2/${id}.pdf`;
 
-        openPdfForDevice(url, `実ページ ${id}`);
+        openPdfForDevice(url, `実ページ ${id}`, preparedWindow);
       };
 
       top.appendChild(num);
