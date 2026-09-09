@@ -338,6 +338,7 @@ let suppressStopForPdf = false;
 let pdfModalOpen = false;
 let pdfRenderGeneration = 0;
 let currentPdfLoadingTask = null;
+let desktopPdfWindow = null;
 
 function isMobileLike(){
   const ua = navigator.userAgent || "";
@@ -510,7 +511,10 @@ function toAbsoluteUrl(url){
 
 function prepareDesktopPdfWindow(){
   if(window.location.protocol === "file:" || isIPhone() || isAndroid()) return null;
-  return window.open("about:blank", "reservationDocumentViewer");
+  if(!desktopPdfWindow || desktopPdfWindow.closed){
+    desktopPdfWindow = window.open("about:blank", "reservationDocumentViewer");
+  }
+  return desktopPdfWindow;
 }
 
 function openPdfForDevice(url, title, preparedWindow=null){
@@ -534,9 +538,10 @@ function openPdfForDevice(url, title, preparedWindow=null){
   // PCではブラウザ標準のPDF表示を使い、同じ文書タブを再利用する。
   const pdfWindow = preparedWindow && !preparedWindow.closed
     ? preparedWindow
-    : window.open("about:blank", "reservationDocumentViewer");
+    : prepareDesktopPdfWindow();
   if(pdfWindow){
-    pdfWindow.location.replace(toAbsoluteUrl(url));
+    desktopPdfWindow = pdfWindow;
+    pdfWindow.location.href = toAbsoluteUrl(url);
     pdfWindow.focus();
   }else{
     openPdfModal(url, title, false);
