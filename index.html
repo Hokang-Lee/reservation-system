@@ -403,7 +403,7 @@ function keepAudioPlaying(){
   }
 }
 
-function openPdfModal(url, title="文章表示"){
+function openPdfModal(url, title="文章表示", useSandbox=true){
   const modal = document.getElementById("pdfModal");
   const frame = document.getElementById("pdfFrame");
   const canvasContainer = document.getElementById("pdfCanvasContainer");
@@ -415,7 +415,11 @@ function openPdfModal(url, title="文章表示"){
   canvasContainer.style.display = "none";
   canvasContainer.replaceChildren();
   frame.style.display = "block";
-  frame.setAttribute("sandbox", "allow-scripts allow-same-origin allow-forms");
+  if(useSandbox){
+    frame.setAttribute("sandbox", "allow-scripts allow-same-origin allow-forms");
+  }else{
+    frame.removeAttribute("sandbox");
+  }
   modal.style.display = "block";
   frame.src = url;
   keepAudioPlaying();
@@ -444,11 +448,12 @@ async function openPdfCanvasModal(url, title="文章表示"){
   container.replaceChildren(status);
   keepAudioPlaying();
 
+  let pdf = null;
   try{
     if(!window.pdfjsLib) throw new Error("PDF.jsを読み込めませんでした");
 
     currentPdfLoadingTask = window.pdfjsLib.getDocument({ url:absoluteUrl });
-    const pdf = await currentPdfLoadingTask.promise;
+    pdf = await currentPdfLoadingTask.promise;
     if(generation !== pdfRenderGeneration) return;
 
     container.replaceChildren();
@@ -492,6 +497,9 @@ async function openPdfCanvasModal(url, title="文章表示"){
     container.replaceChildren(status);
     console.error("PDF render failed", error);
   }finally{
+    if(pdf){
+      try{ await pdf.destroy(); }catch(_){}
+    }
     if(generation === pdfRenderGeneration) currentPdfLoadingTask = null;
   }
 }
@@ -500,29 +508,21 @@ function toAbsoluteUrl(url){
   return new URL(url, window.location.href).href;
 }
 
-function toGoogleDocsViewerUrl(url){
-  const absoluteUrl = toAbsoluteUrl(url);
-  return `https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(absoluteUrl)}`;
-}
-
-function openInNewTabOrCurrent(url){
-  const opened = window.open(url, "_blank");
-  if(!opened) window.location.href = url;
-}
-
 function openPdfForDevice(url, title){
+  // index.htmlをPCで直接開いた場合、PDF.jsはfile://のPDFを取得できないため
+  // ブラウザ内蔵のPDF表示へ切り替える。
+  if(window.location.protocol === "file:"){
+    openPdfModal(url, title, false);
+    return;
+  }
+
   if(isIPhone()){
     openPdfModal(url, title);
     return;
   }
 
-  if(isAndroid()){
-    openPdfCanvasModal(url, title);
-    return;
-  }
-
-  openInNewTabOrCurrent(url);
-  setTimeout(()=>{ suppressStopForPdf = false; }, 5000);
+  // AndroidとPCは同一ページ内で描画し、PDFタブが増え続けるのを防ぐ
+  openPdfCanvasModal(url, title);
 }
 
 function closePdfModal(){
