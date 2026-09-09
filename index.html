@@ -126,6 +126,13 @@ button:hover{ background:#d1d5db; }
   border-radius:8px; background:#475569; color:#fff; font-weight:bold;
   text-decoration:none;
 }
+.load-more-dates{
+  display:block; width:min(360px,calc(100% - 24px)); min-height:52px;
+  margin:22px auto; padding:10px 16px; border:2px solid #2563eb;
+  border-radius:10px; background:#fff; color:#1d4ed8; font-size:17px;
+  font-weight:bold;
+}
+.load-more-dates:hover{ background:#eff6ff; }
 .pdf-status{
   margin:24px auto; padding:16px; max-width:420px; border-radius:10px;
   background:#fff; text-align:center; font-size:17px; line-height:1.6;
@@ -348,6 +355,8 @@ let suppressStopForPdf = false;
 let pdfModalOpen = false;
 let pdfRenderGeneration = 0;
 let currentPdfLoadingTask = null;
+const documentImagePreloads = new Map();
+let initialDocumentPrefetchScheduled = false;
 
 function isMobileLike(){
   const ua = navigator.userAgent || "";
@@ -522,6 +531,51 @@ function isDesktopDocumentImageMode(){
   return !isIPhone() && !isAndroid();
 }
 
+function getDocumentImageUrls(folder, id){
+  const pageCount = window.DOCUMENT_PAGE_COUNTS?.[folder]?.[id] || 0;
+  return Array.from(
+    {length:pageCount},
+    (_,index)=>`${folder}-images/${id}-${index + 1}.webp`
+  );
+}
+
+function preloadDocumentImages(folder, id){
+  if(!isDesktopDocumentImageMode()) return;
+  getDocumentImageUrls(folder, id).forEach(url=>{
+    if(documentImagePreloads.has(url)) return;
+    const image = new Image();
+    image.decoding = "async";
+    image.src = url;
+    documentImagePreloads.set(url, image);
+  });
+}
+
+function preloadNearbyDocuments(folder, id){
+  const number = Number(id);
+  [number - 1, number, number + 1, number + 2]
+    .filter(value=>value >= 1 && value <= 192)
+    .forEach(value=>preloadDocumentImages(folder, formatSeat(value)));
+}
+
+function scheduleInitialDocumentPrefetch(){
+  if(initialDocumentPrefetchScheduled || !isDesktopDocumentImageMode()) return;
+  initialDocumentPrefetchScheduled = true;
+  const startPrefetch = ()=>{
+    const ids = [...document.querySelectorAll(".play-with-doc")]
+      .map(button=>(button.getAttribute("aria-label") || "").match(/音声 (\d{3})/)?.[1])
+      .filter(Boolean);
+    [...new Set(ids)].slice(0, 10).forEach(id=>{
+      preloadDocumentImages("docs", id);
+      preloadDocumentImages("docs2", id);
+    });
+  };
+  if("requestIdleCallback" in window){
+    requestIdleCallback(startPrefetch, {timeout:1500});
+  }else{
+    setTimeout(startPrefetch, 300);
+  }
+}
+
 function openDocumentImageModal(url, title="文章表示"){
   const match = url.match(/^(docs2?)\/([^/]+)\.pdf$/);
   const pageCount = match && window.DOCUMENT_PAGE_COUNTS?.[match[1]]?.[match[2]];
@@ -556,6 +610,7 @@ function openDocumentImageModal(url, title="文章表示"){
   directLink.textContent = "元のPDFを開く";
 
   container.replaceChildren(status, directLink);
+  preloadNearbyDocuments(match[1], match[2]);
   let loadedPages = 0;
   let failedPages = 0;
 
@@ -579,7 +634,7 @@ function openDocumentImageModal(url, title="文章表示"){
         status.textContent = "画像を表示できませんでした。元のPDFをお試しください。";
       }
     };
-    image.src = `${match[1]}-images/${match[2]}-${pageNumber}.webp`;
+    image.src = getDocumentImageUrls(match[1], match[2])[pageNumber - 1];
     container.appendChild(image);
   }
   keepAudioPlaying();
@@ -904,6 +959,8 @@ function generateDates(){
 }
 
 const dates = generateDates();
+const DATES_PER_PAGE = 40;
+let visibleDateCount = DATES_PER_PAGE;
 
 function formatSeat(n){
   return String(n).padStart(3,"0");
@@ -938,7 +995,7 @@ function render(data){
   const today = new Date();
   today.setHours(0,0,0,0);
 
-  dates.forEach(date => {
+  dates.slice(0, visibleDateCount).forEach(date => {
   
    // ===== 締め切り：当日06:00、締め切り2時間後(08:00)を過ぎたら非表示 =====
     const now = new Date();
@@ -1204,6 +1261,20 @@ function render(data){
       app.appendChild(row);
     });
   });
+
+  if(visibleDateCount < dates.length){
+    const loadMore = document.createElement("button");
+    loadMore.className = "load-more-dates";
+    const remaining = dates.length - visibleDateCount;
+    loadMore.textContent = `次の${Math.min(DATES_PER_PAGE, remaining)}日を表示`;
+    loadMore.setAttribute("aria-label", `先の日程をさらに${Math.min(DATES_PER_PAGE, remaining)}日表示`);
+    loadMore.onclick = ()=>{
+      visibleDateCount = Math.min(visibleDateCount + DATES_PER_PAGE, dates.length);
+      render(data);
+    };
+    app.appendChild(loadMore);
+  }
+  scheduleInitialDocumentPrefetch();
 }
 
 db.ref("reservations").on("value", snap=>{
