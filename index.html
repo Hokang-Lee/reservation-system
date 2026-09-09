@@ -117,6 +117,15 @@ button:hover{ background:#d1d5db; }
   display:block; max-width:100%; height:auto; margin:0 auto 12px;
   background:#fff; box-shadow:0 2px 8px rgba(0,0,0,.2);
 }
+.pdf-canvas-container .document-page-image{
+  display:block; width:min(1191px,100%); height:auto; margin:0 auto 12px;
+  background:#fff; box-shadow:0 2px 8px rgba(0,0,0,.2);
+}
+.document-direct-link{
+  display:block; width:max-content; margin:0 auto 12px; padding:9px 14px;
+  border-radius:8px; background:#475569; color:#fff; font-weight:bold;
+  text-decoration:none;
+}
 .pdf-status{
   margin:24px auto; padding:16px; max-width:420px; border-radius:10px;
   background:#fff; text-align:center; font-size:17px; line-height:1.6;
@@ -222,6 +231,7 @@ button:hover{ background:#d1d5db; }
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
+<script src="document-pages.js"></script>
 <script>
 firebase.initializeApp({
   apiKey:"AIzaSyDvjXQ5xX_jwcHcXnESjjJalCq2xqL2qIw",
@@ -338,7 +348,6 @@ let suppressStopForPdf = false;
 let pdfModalOpen = false;
 let pdfRenderGeneration = 0;
 let currentPdfLoadingTask = null;
-let desktopPdfWindow = null;
 
 function isMobileLike(){
   const ua = navigator.userAgent || "";
@@ -509,22 +518,74 @@ function toAbsoluteUrl(url){
   return new URL(url, window.location.href).href;
 }
 
-function prepareDesktopPdfWindow(){
-  if(window.location.protocol === "file:" || isIPhone() || isAndroid()) return null;
-  if(!desktopPdfWindow || desktopPdfWindow.closed){
-    desktopPdfWindow = window.open("about:blank", "reservationDocumentViewer");
-  }
-  return desktopPdfWindow;
+function isDesktopDocumentImageMode(){
+  return !isIPhone() && !isAndroid();
 }
 
-function openPdfForDevice(url, title, preparedWindow=null){
-  // index.htmlをPCで直接開いた場合、PDF.jsはfile://のPDFを取得できないため
-  // ブラウザ内蔵のPDF表示へ切り替える。
-  if(window.location.protocol === "file:"){
+function openDocumentImageModal(url, title="文章表示"){
+  const match = url.match(/^(docs2?)\/([^/]+)\.pdf$/);
+  const pageCount = match && window.DOCUMENT_PAGE_COUNTS?.[match[1]]?.[match[2]];
+  if(!match || !pageCount){
     openPdfModal(url, title, false);
     return;
   }
 
+  const modal = document.getElementById("pdfModal");
+  const frame = document.getElementById("pdfFrame");
+  const container = document.getElementById("pdfCanvasContainer");
+  const ttl = document.getElementById("pdfModalTitle");
+  const generation = ++pdfRenderGeneration;
+
+  ttl.textContent = title;
+  suppressStopForPdf = true;
+  pdfModalOpen = true;
+  frame.src = "";
+  frame.style.display = "none";
+  container.style.display = "block";
+  modal.style.display = "block";
+
+  const status = document.createElement("div");
+  status.className = "pdf-status";
+  status.textContent = "文書を読み込んでいます…";
+
+  const directLink = document.createElement("a");
+  directLink.className = "document-direct-link";
+  directLink.href = toAbsoluteUrl(url);
+  directLink.target = "_blank";
+  directLink.rel = "noopener";
+  directLink.textContent = "元のPDFを開く";
+
+  container.replaceChildren(status, directLink);
+  let loadedPages = 0;
+  let failedPages = 0;
+
+  for(let pageNumber = 1; pageNumber <= pageCount; pageNumber++){
+    const image = document.createElement("img");
+    image.className = "document-page-image";
+    image.alt = `${title} ${pageNumber}ページ目`;
+    image.decoding = "async";
+    image.loading = pageNumber === 1 ? "eager" : "lazy";
+    if(pageNumber === 1) image.fetchPriority = "high";
+    image.onload = ()=>{
+      if(generation !== pdfRenderGeneration) return;
+      loadedPages++;
+      if(status.isConnected) status.remove();
+    };
+    image.onerror = ()=>{
+      if(generation !== pdfRenderGeneration) return;
+      failedPages++;
+      image.remove();
+      if(failedPages === pageCount && loadedPages === 0){
+        status.textContent = "画像を表示できませんでした。元のPDFをお試しください。";
+      }
+    };
+    image.src = `${match[1]}-images/${match[2]}-${pageNumber}.webp`;
+    container.appendChild(image);
+  }
+  keepAudioPlaying();
+}
+
+function openPdfForDevice(url, title){
   if(isIPhone()){
     openPdfModal(url, title);
     return;
@@ -535,17 +596,8 @@ function openPdfForDevice(url, title, preparedWindow=null){
     return;
   }
 
-  // PCではブラウザ標準のPDF表示を使い、同じ文書タブを再利用する。
-  const pdfWindow = preparedWindow && !preparedWindow.closed
-    ? preparedWindow
-    : prepareDesktopPdfWindow();
-  if(pdfWindow){
-    desktopPdfWindow = pdfWindow;
-    pdfWindow.location.href = toAbsoluteUrl(url);
-    pdfWindow.focus();
-  }else{
-    openPdfModal(url, title, false);
-  }
+  // PCでは事前生成した軽量画像を表示し、PDFビューアーの負荷を避ける。
+  openDocumentImageModal(url, title);
   setTimeout(()=>{ suppressStopForPdf = false; }, 5000);
 }
 
@@ -1086,13 +1138,12 @@ function render(data){
       pdfBtn.title = "音声を再生して文章を開く";
       pdfBtn.setAttribute("aria-label", `音声 ${id} を再生して文章を開く`);
       pdfBtn.onclick = async () => {
-        const preparedWindow = prepareDesktopPdfWindow();
         const url = `docs/${id}.pdf`;
 
-        // PCはPDFを先に開き、音声の読み込みと並行させる。
-        if(preparedWindow){
+        // PCは軽量画像を先に表示し、音声の読み込みと並行させる。
+        if(isDesktopDocumentImageMode()){
           suppressStopForPdf = true;
-          openPdfForDevice(url, `文章 ${id}`, preparedWindow);
+          openPdfForDevice(url, `文章 ${id}`);
           await ensureMatchingAudioPlaying(id, row, btn, seekWrap);
           return;
         }
@@ -1111,13 +1162,12 @@ function render(data){
       doc2Btn.setAttribute("aria-label", `音声 ${id} を再生して実ページを開く`);
       doc2Btn.style.fontSize = "11px";
       doc2Btn.onclick = async () => {
-        const preparedWindow = prepareDesktopPdfWindow();
         const url = `docs2/${id}.pdf`;
 
-        // PCはPDFを先に開き、音声の読み込みと並行させる。
-        if(preparedWindow){
+        // PCは軽量画像を先に表示し、音声の読み込みと並行させる。
+        if(isDesktopDocumentImageMode()){
           suppressStopForPdf = true;
-          openPdfForDevice(url, `実ページ ${id}`, preparedWindow);
+          openPdfForDevice(url, `実ページ ${id}`);
           await ensureMatchingAudioPlaying(id, row, btn, seekWrap);
           return;
         }
