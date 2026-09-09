@@ -1087,15 +1087,21 @@ function render(data){
       pdfBtn.setAttribute("aria-label", `音声 ${id} を再生して文章を開く`);
       pdfBtn.onclick = async () => {
         const preparedWindow = prepareDesktopPdfWindow();
+        const url = `docs/${id}.pdf`;
+
+        // PCはPDFを先に開き、音声の読み込みと並行させる。
+        if(preparedWindow){
+          suppressStopForPdf = true;
+          openPdfForDevice(url, `文章 ${id}`, preparedWindow);
+          await ensureMatchingAudioPlaying(id, row, btn, seekWrap);
+          return;
+        }
+
         if(!await ensureMatchingAudioPlaying(id, row, btn, seekWrap)){
-          if(preparedWindow && !preparedWindow.closed) preparedWindow.close();
           return;
         }
         suppressStopForPdf = true;
-
-        const url = `docs/${id}.pdf`;
-
-        openPdfForDevice(url, `文章 ${id}`, preparedWindow);
+        openPdfForDevice(url, `文章 ${id}`);
       };
 
       const doc2Btn = document.createElement("button");
@@ -1106,15 +1112,21 @@ function render(data){
       doc2Btn.style.fontSize = "11px";
       doc2Btn.onclick = async () => {
         const preparedWindow = prepareDesktopPdfWindow();
+        const url = `docs2/${id}.pdf`;
+
+        // PCはPDFを先に開き、音声の読み込みと並行させる。
+        if(preparedWindow){
+          suppressStopForPdf = true;
+          openPdfForDevice(url, `実ページ ${id}`, preparedWindow);
+          await ensureMatchingAudioPlaying(id, row, btn, seekWrap);
+          return;
+        }
+
         if(!await ensureMatchingAudioPlaying(id, row, btn, seekWrap)){
-          if(preparedWindow && !preparedWindow.closed) preparedWindow.close();
           return;
         }
         suppressStopForPdf = true;
-
-        const url = `docs2/${id}.pdf`;
-
-        openPdfForDevice(url, `実ページ ${id}`, preparedWindow);
+        openPdfForDevice(url, `実ページ ${id}`);
       };
 
       top.appendChild(num);
