@@ -133,6 +133,21 @@ button:hover{ background:#d1d5db; }
   font-weight:bold;
 }
 .load-more-dates:hover{ background:#eff6ff; }
+.title.special-challenge-title{
+  margin-top:18px; padding:14px 16px; border:3px solid #dc2626;
+  border-radius:10px; background:#fef3c7 !important; color:#991b1b !important;
+  font-size:18px; font-weight:800; box-shadow:0 3px 10px rgba(153,27,27,.18);
+}
+.special-challenge-badge{
+  display:inline-block; margin-left:8px; padding:4px 9px; border-radius:999px;
+  background:#dc2626; color:#fff; font-size:15px; font-weight:800;
+  white-space:nowrap;
+}
+.special-challenge-notice{
+  margin:7px 0 10px; padding:11px 14px; border-left:6px solid #dc2626;
+  border-radius:7px; background:#fff7ed; color:#7f1d1d; font-size:17px;
+  font-weight:800; line-height:1.5;
+}
 .pdf-status{
   margin:24px auto; padding:16px; max-width:420px; border-radius:10px;
   background:#fff; text-align:center; font-size:17px; line-height:1.6;
@@ -161,6 +176,13 @@ button:hover{ background:#d1d5db; }
     margin-top:14px; padding:10px 12px; border-radius:8px;
     font-size:13px; line-height:1.45;
   }
+  .title.special-challenge-title{
+    padding:12px; font-size:16px; line-height:1.5;
+  }
+  .special-challenge-badge{
+    display:block; width:max-content; margin:7px 0 0; font-size:14px;
+  }
+  .special-challenge-notice{ font-size:16px; }
   .title:first-child{ margin-top:0; }
   .remain{ margin:6px 2px 8px; font-size:14px; }
   .row{
@@ -1020,13 +1042,20 @@ function render(data){
 
     const title = document.createElement("div");
     title.className = "title";
-    const isChallengeDay = roundDay !== 1 && (day === 0 || day === 1 || SPECIAL_RESERVATION_DATES.includes(date));
+    const isSpecialChallengeDay = SPECIAL_RESERVATION_DATES.includes(date);
+    const isChallengeDay = roundDay !== 1 && (day === 0 || day === 1 || isSpecialChallengeDay);
     const headingText = roundDay === 1
       ? "ラウンド初日 家庭盟誓訓読"
-      : `ラウンド内${roundDay}日目${isChallengeDay ? " チャレンジデー" : ""}`;
+      : `ラウンド内${roundDay}日目${!isSpecialChallengeDay && isChallengeDay ? " チャレンジデー" : ""}`;
     title.textContent = `■ ${date}（${["日","月","火","水","木","金","土"][day]}） / ${headingText}`;
 
-    if(day===0){
+    if(isSpecialChallengeDay){
+      title.classList.add("special-challenge-title");
+      const badge = document.createElement("span");
+      badge.className = "special-challenge-badge";
+      badge.textContent = "★ 特別チャレンジデー";
+      title.appendChild(badge);
+    }else if(day===0){
       title.style.color = "red";
       title.style.background = "#ffeaea";
     }else{
@@ -1035,6 +1064,14 @@ function render(data){
     if(isPast) title.style.opacity = 0.5;
 
     app.appendChild(title);
+
+    if(isSpecialChallengeDay){
+      const notice = document.createElement("div");
+      notice.className = "special-challenge-notice";
+      notice.setAttribute("role", "note");
+      notice.textContent = "この日は特別に設けられたチャレンジデーです。";
+      app.appendChild(notice);
+    }
 
     // ===== 1日目：縦並び（席番号＋名前表示＋予約/編集）=====
     if(roundDay === 1){
