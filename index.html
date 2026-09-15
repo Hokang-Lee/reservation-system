@@ -102,24 +102,6 @@ button:hover{ background:#d1d5db; }
   border:2px solid #94a3b8; border-radius:9px; padding:11px;
   background:#fff; font:inherit; font-size:18px; line-height:1.6;
 }
-.comment-photo-controls{
-  margin-top:14px; padding:12px; border:1px solid #cbd5e1;
-  border-radius:9px; background:#f8fafc;
-}
-.comment-photo-controls label{ margin:0 0 8px; }
-.comment-photo-controls input[type="file"]{
-  width:100%; min-height:44px; box-sizing:border-box; font-size:16px;
-}
-.comment-photo-preview{
-  display:none; width:auto; max-width:100%; max-height:220px; margin:10px auto 0;
-  border-radius:8px; object-fit:contain; background:#e2e8f0;
-}
-.comment-photo-preview.visible{ display:block; }
-.comment-photo-remove{
-  display:none; margin:10px auto 0; background:#fee2e2; color:#991b1b;
-  font-weight:700;
-}
-.comment-photo-remove.visible{ display:block; }
 .name-dialog select:focus,.name-dialog input:focus{
   outline:3px solid rgba(37,99,235,.25); border-color:#2563eb;
 }
@@ -189,10 +171,6 @@ button:hover{ background:#d1d5db; }
   font-size:15px; font-weight:700; white-space:nowrap;
 }
 .daily-comment-button:hover{ background:#1d4ed8; }
-.daily-comment-photo{
-  display:block; max-width:min(320px,100%); max-height:240px; margin:9px 0 2px;
-  border-radius:8px; object-fit:contain; background:#dbeafe;
-}
 .pdf-status{
   margin:24px auto; padding:16px; max-width:420px; border-radius:10px;
   background:#fff; text-align:center; font-size:17px; line-height:1.6;
@@ -301,13 +279,7 @@ button:hover{ background:#d1d5db; }
     <h2 id="commentDialogTitle">共有メモ</h2>
     <label id="commentDateLabel" for="dailyCommentInput"></label>
     <textarea id="dailyCommentInput" maxlength="200" rows="5"></textarea>
-    <div class="comment-photo-controls">
-      <label for="dailyCommentPhoto">写真（1枚まで）</label>
-      <input id="dailyCommentPhoto" type="file" accept="image/*">
-      <img id="dailyCommentPhotoPreview" class="comment-photo-preview" alt="選択した写真の確認">
-      <button id="removeDailyCommentPhoto" class="comment-photo-remove" type="button">写真を削除</button>
-    </div>
-    <p class="name-dialog-help">この日の欄を利用する全員に表示されます。文章と写真は、それぞれ空欄または「写真を削除」にして保存すると削除されます。</p>
+    <p class="name-dialog-help">この日の欄を利用する全員に表示されます。削除するときは空欄にして保存してください。</p>
     <div class="name-dialog-actions">
       <button id="cancelCommentDialog" type="button">やめる</button>
       <button class="name-dialog-save" type="submit">保存</button>
@@ -424,42 +396,6 @@ function askReservationName(currentName = ""){
   });
 }
 
-function compressCommentPhoto(file){
-  const maxSide = 800;
-  const maxBytes = 180 * 1024;
-  return new Promise((resolve, reject)=>{
-    if(!file || !file.type.startsWith("image/")){
-      reject(new Error("画像ファイルを選択してください。"));
-      return;
-    }
-    const reader = new FileReader();
-    reader.onerror = ()=>reject(new Error("写真を読み込めませんでした。"));
-    reader.onload = ()=>{
-      const image = new Image();
-      image.onerror = ()=>reject(new Error("写真を読み込めませんでした。"));
-      image.onload = ()=>{
-        const scale = Math.min(1, maxSide / Math.max(image.naturalWidth, image.naturalHeight));
-        const canvas = document.createElement("canvas");
-        canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
-        canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
-        const context = canvas.getContext("2d");
-        context.fillStyle = "#fff";
-        context.fillRect(0, 0, canvas.width, canvas.height);
-        context.drawImage(image, 0, 0, canvas.width, canvas.height);
-        let quality = .78;
-        let result = canvas.toDataURL("image/jpeg", quality);
-        while(result.length * .75 > maxBytes && quality > .38){
-          quality -= .08;
-          result = canvas.toDataURL("image/jpeg", quality);
-        }
-        resolve(result);
-      };
-      image.src = reader.result;
-    };
-    reader.readAsDataURL(file);
-  });
-}
-
 function getDailyComment(dayData){
   if(!dayData || typeof dayData !== "object") return "";
   return Object.keys(dayData)
@@ -490,30 +426,15 @@ async function saveDailyComment(date, text, dayData){
   await Promise.all(saves);
 }
 
-function askDailyComment(date, currentComment = "", currentPhoto = ""){
+function askDailyComment(date, currentComment = ""){
   const backdrop = document.getElementById("commentDialogBackdrop");
   const form = document.getElementById("commentDialog");
   const input = document.getElementById("dailyCommentInput");
-  const photoInput = document.getElementById("dailyCommentPhoto");
-  const photoPreview = document.getElementById("dailyCommentPhotoPreview");
-  const removePhoto = document.getElementById("removeDailyCommentPhoto");
   const dateLabel = document.getElementById("commentDateLabel");
   const cancel = document.getElementById("cancelCommentDialog");
-  const save = form.querySelector(".name-dialog-save");
-  let photoValue = currentPhoto || "";
-
-  const refreshPhotoPreview = ()=>{
-    photoPreview.src = photoValue || "";
-    photoPreview.classList.toggle("visible", !!photoValue);
-    removePhoto.classList.toggle("visible", !!photoValue);
-  };
 
   dateLabel.textContent = `${date} の共有メモ（200文字まで）`;
   input.value = currentComment || "";
-  photoInput.value = "";
-  save.disabled = false;
-  save.textContent = "保存";
-  refreshPhotoPreview();
   backdrop.classList.add("open");
   document.body.style.overflow = "hidden";
   setTimeout(()=> input.focus(), 0);
@@ -524,35 +445,17 @@ function askDailyComment(date, currentComment = "", currentPhoto = ""){
       document.body.style.overflow = "";
       form.onsubmit = null;
       cancel.onclick = null;
-      removePhoto.onclick = null;
-      photoInput.onchange = null;
       backdrop.onkeydown = null;
       resolve(value);
     };
 
     cancel.onclick = ()=>finish(null);
-    removePhoto.onclick = ()=>{
-      photoValue = "";
-      photoInput.value = "";
-      refreshPhotoPreview();
-    };
-    photoInput.onchange = async ()=>{
-      const file = photoInput.files?.[0];
-      if(!file) return;
-      try{
-        photoValue = await compressCommentPhoto(file);
-        refreshPhotoPreview();
-      }catch(error){
-        alert(error.message || "写真を読み込めませんでした。");
-        photoInput.value = "";
-      }
-    };
     backdrop.onkeydown = event=>{
       if(event.key === "Escape") finish(null);
     };
     form.onsubmit = event=>{
       event.preventDefault();
-      finish({ comment:input.value, photo:photoValue });
+      finish(input.value);
     };
   });
 }
@@ -1276,41 +1179,25 @@ function render(data){
     }
 
     const currentComment = getDailyComment(data?.[date]);
-    const currentCommentPhoto = typeof data?.[date]?._commentPhoto === "string"
-      ? data[date]._commentPhoto
-      : "";
     const commentRow = document.createElement("div");
     commentRow.className = "daily-comment-row";
 
     const commentText = document.createElement("div");
     commentText.className = `daily-comment-text${currentComment ? "" : " daily-comment-empty"}`;
     commentText.textContent = currentComment || "共有メモはまだありません";
-    if(currentCommentPhoto){
-      const photo = document.createElement("img");
-      photo.className = "daily-comment-photo";
-      photo.src = currentCommentPhoto;
-      photo.alt = `${date} の共有写真`;
-      photo.loading = "lazy";
-      photo.decoding = "async";
-      commentText.appendChild(photo);
-    }
 
     const commentButton = document.createElement("button");
     commentButton.className = "daily-comment-button";
-    commentButton.textContent = currentComment || currentCommentPhoto ? "メモを編集" : "メモを書く";
-    commentButton.setAttribute("aria-label", `${date} の共有メモを${currentComment || currentCommentPhoto ? "編集" : "入力"}`);
+    commentButton.textContent = currentComment ? "メモを編集" : "メモを書く";
+    commentButton.setAttribute("aria-label", `${date} の共有メモを${currentComment ? "編集" : "入力"}`);
     commentButton.onclick = async ()=>{
-      const input = await askDailyComment(date, currentComment, currentCommentPhoto);
+      const input = await askDailyComment(date, currentComment);
       if(input === null) return;
-      const trimmed = input.comment.trim();
+      const trimmed = input.trim();
       try{
         const saves = [];
         if(trimmed !== currentComment){
           saves.push(saveDailyComment(date, trimmed, data?.[date]));
-        }
-        if(input.photo !== currentCommentPhoto){
-          const photoRef = db.ref(`reservations/${date}/_commentPhoto`);
-          saves.push(input.photo ? photoRef.set(input.photo) : photoRef.remove());
         }
         await Promise.all(saves);
       }catch(error){
