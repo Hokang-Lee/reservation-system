@@ -165,6 +165,11 @@ button:hover{ background:#d1d5db; }
   color:#1e3a5f; font-size:16px; line-height:1.55; white-space:pre-wrap;
   overflow-wrap:anywhere;
 }
+.daily-comment-text a{
+  display:inline; padding:4px 1px; color:#1d4ed8; font-weight:700;
+  text-decoration:underline; text-underline-offset:2px; overflow-wrap:anywhere;
+}
+.daily-comment-text a:visited{ color:#6d28d9; }
 .daily-comment-empty{ color:#64748b; }
 .daily-comment-button{
   min-height:44px; padding:8px 14px; background:#2563eb; color:#fff;
@@ -407,6 +412,34 @@ function getDailyComment(dayData){
     })
     .map(key=>typeof dayData[key] === "string" ? dayData[key] : "")
     .join("");
+}
+
+function showDailyComment(container, text){
+  container.textContent = "";
+  const urlPattern = /https?:\/\/[^\s<>"']+/gi;
+  let position = 0;
+  for(const match of text.matchAll(urlPattern)){
+    const start = match.index;
+    let url = match[0];
+    let trailing = "";
+    while(url && /[.,;:!?。、，．；：！？)\]}＞》」』】]$/.test(url)){
+      trailing = url.slice(-1) + trailing;
+      url = url.slice(0, -1);
+    }
+    container.append(document.createTextNode(text.slice(position, start)));
+    if(url){
+      const link = document.createElement("a");
+      link.href = url;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      link.textContent = url;
+      link.setAttribute("aria-label", `${url} を新しい画面で開く`);
+      container.append(link);
+    }
+    container.append(document.createTextNode(trailing));
+    position = start + match[0].length;
+  }
+  container.append(document.createTextNode(text.slice(position)));
 }
 
 async function saveDailyComment(date, text, dayData){
@@ -1184,7 +1217,11 @@ function render(data){
 
     const commentText = document.createElement("div");
     commentText.className = `daily-comment-text${currentComment ? "" : " daily-comment-empty"}`;
-    commentText.textContent = currentComment || "共有メモはまだありません";
+    if(currentComment){
+      showDailyComment(commentText, currentComment);
+    }else{
+      commentText.textContent = "共有メモはまだありません";
+    }
 
     const commentButton = document.createElement("button");
     commentButton.className = "daily-comment-button";
