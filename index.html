@@ -97,7 +97,15 @@ button:hover{ background:#d1d5db; }
   width:100%; min-height:48px; box-sizing:border-box; border:2px solid #94a3b8;
   border-radius:9px; padding:9px 11px; background:#fff; font-size:18px;
 }
+.comment-dialog textarea{
+  width:100%; min-height:130px; box-sizing:border-box; resize:vertical;
+  border:2px solid #94a3b8; border-radius:9px; padding:11px;
+  background:#fff; font:inherit; font-size:18px; line-height:1.6;
+}
 .name-dialog select:focus,.name-dialog input:focus{
+  outline:3px solid rgba(37,99,235,.25); border-color:#2563eb;
+}
+.comment-dialog textarea:focus{
   outline:3px solid rgba(37,99,235,.25); border-color:#2563eb;
 }
 .name-dialog-help{ margin:8px 0 0; color:#475569; font-size:14px; line-height:1.5; }
@@ -148,6 +156,21 @@ button:hover{ background:#d1d5db; }
   border-radius:7px; background:#fff7ed; color:#7f1d1d; font-size:17px;
   font-weight:800; line-height:1.5;
 }
+.daily-comment-row{
+  display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center;
+  gap:10px; margin:7px 0 10px; padding:10px 12px; border:1px solid #bfdbfe;
+  border-radius:9px; background:#eff6ff;
+}
+.daily-comment-text{
+  color:#1e3a5f; font-size:16px; line-height:1.55; white-space:pre-wrap;
+  overflow-wrap:anywhere;
+}
+.daily-comment-empty{ color:#64748b; }
+.daily-comment-button{
+  min-height:44px; padding:8px 14px; background:#2563eb; color:#fff;
+  font-size:15px; font-weight:700; white-space:nowrap;
+}
+.daily-comment-button:hover{ background:#1d4ed8; }
 .pdf-status{
   margin:24px auto; padding:16px; max-width:420px; border-radius:10px;
   background:#fff; text-align:center; font-size:17px; line-height:1.6;
@@ -183,6 +206,11 @@ button:hover{ background:#d1d5db; }
     display:block; width:max-content; margin:7px 0 0; font-size:14px;
   }
   .special-challenge-notice{ font-size:16px; }
+  .daily-comment-row{
+    grid-template-columns:minmax(0,1fr) 92px; padding:9px 10px;
+  }
+  .daily-comment-text{ font-size:15px; }
+  .daily-comment-button{ width:92px; padding:7px 6px; font-size:14px; }
   .title:first-child{ margin-top:0; }
   .remain{ margin:6px 2px 8px; font-size:14px; }
   .row{
@@ -242,6 +270,19 @@ button:hover{ background:#d1d5db; }
     <div class="name-dialog-actions">
       <button id="cancelNameDialog" type="button">やめる</button>
       <button class="name-dialog-save" type="submit">決定</button>
+    </div>
+  </form>
+</div>
+
+<div id="commentDialogBackdrop" class="name-dialog-backdrop" role="presentation">
+  <form id="commentDialog" class="name-dialog comment-dialog" role="dialog" aria-modal="true" aria-labelledby="commentDialogTitle">
+    <h2 id="commentDialogTitle">共有メモ</h2>
+    <label id="commentDateLabel" for="dailyCommentInput"></label>
+    <textarea id="dailyCommentInput" maxlength="200" rows="5"></textarea>
+    <p class="name-dialog-help">この日の欄を利用する全員に表示されます。削除するときは空欄にして保存してください。</p>
+    <div class="name-dialog-actions">
+      <button id="cancelCommentDialog" type="button">やめる</button>
+      <button class="name-dialog-save" type="submit">保存</button>
     </div>
   </form>
 </div>
@@ -349,6 +390,40 @@ function askReservationName(currentName = ""){
       if(event.key === "Escape") finish(null);
     };
     form.onsubmit = event => {
+      event.preventDefault();
+      finish(input.value);
+    };
+  });
+}
+
+function askDailyComment(date, currentComment = ""){
+  const backdrop = document.getElementById("commentDialogBackdrop");
+  const form = document.getElementById("commentDialog");
+  const input = document.getElementById("dailyCommentInput");
+  const dateLabel = document.getElementById("commentDateLabel");
+  const cancel = document.getElementById("cancelCommentDialog");
+
+  dateLabel.textContent = `${date} の共有メモ（200文字まで）`;
+  input.value = currentComment || "";
+  backdrop.classList.add("open");
+  document.body.style.overflow = "hidden";
+  setTimeout(()=> input.focus(), 0);
+
+  return new Promise(resolve=>{
+    const finish = value=>{
+      backdrop.classList.remove("open");
+      document.body.style.overflow = "";
+      form.onsubmit = null;
+      cancel.onclick = null;
+      backdrop.onkeydown = null;
+      resolve(value);
+    };
+
+    cancel.onclick = ()=>finish(null);
+    backdrop.onkeydown = event=>{
+      if(event.key === "Escape") finish(null);
+    };
+    form.onsubmit = event=>{
       event.preventDefault();
       finish(input.value);
     };
@@ -1072,6 +1147,41 @@ function render(data){
       notice.textContent = "この日は特別に設けられたチャレンジデーです。";
       app.appendChild(notice);
     }
+
+    const currentComment = typeof data?.[date]?._comment === "string"
+      ? data[date]._comment
+      : "";
+    const commentRow = document.createElement("div");
+    commentRow.className = "daily-comment-row";
+
+    const commentText = document.createElement("div");
+    commentText.className = `daily-comment-text${currentComment ? "" : " daily-comment-empty"}`;
+    commentText.textContent = currentComment || "共有メモはまだありません";
+
+    const commentButton = document.createElement("button");
+    commentButton.className = "daily-comment-button";
+    commentButton.textContent = currentComment ? "メモを編集" : "メモを書く";
+    commentButton.setAttribute("aria-label", `${date} の共有メモを${currentComment ? "編集" : "入力"}`);
+    commentButton.onclick = async ()=>{
+      const input = await askDailyComment(date, currentComment);
+      if(input === null) return;
+      const trimmed = input.trim();
+      try{
+        const ref = db.ref(`reservations/${date}/_comment`);
+        if(trimmed){
+          await ref.set(trimmed);
+        }else{
+          await ref.remove();
+        }
+      }catch(error){
+        console.error("Daily comment save failed", error);
+        alert("共有メモを保存できませんでした。通信状態を確認して、もう一度お試しください。");
+      }
+    };
+
+    commentRow.appendChild(commentText);
+    commentRow.appendChild(commentButton);
+    app.appendChild(commentRow);
 
     // ===== 1日目：縦並び（席番号＋名前表示＋予約/編集）=====
     if(roundDay === 1){
