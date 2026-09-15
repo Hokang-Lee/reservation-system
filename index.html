@@ -1276,10 +1276,16 @@ function render(data){
       if(input === null) return;
       const trimmed = input.comment.trim();
       try{
-        const updates = {};
-        updates[`reservations/${date}/_comment`] = trimmed || null;
-        updates[`reservations/${date}/_commentPhoto`] = input.photo || null;
-        await db.ref().update(updates);
+        const saves = [];
+        if(trimmed !== currentComment){
+          const commentRef = db.ref(`reservations/${date}/_comment`);
+          saves.push(trimmed ? commentRef.set(trimmed) : commentRef.remove());
+        }
+        if(input.photo !== currentCommentPhoto){
+          const photoRef = db.ref(`reservations/${date}/_commentPhoto`);
+          saves.push(input.photo ? photoRef.set(input.photo) : photoRef.remove());
+        }
+        await Promise.all(saves);
       }catch(error){
         console.error("Daily comment save failed", error);
         alert("共有メモを保存できませんでした。通信状態を確認して、もう一度お試しください。");
