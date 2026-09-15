@@ -460,6 +460,36 @@ function compressCommentPhoto(file){
   });
 }
 
+function getDailyComment(dayData){
+  if(!dayData || typeof dayData !== "object") return "";
+  return Object.keys(dayData)
+    .filter(key=>key === "_comment" || /^_comment\d{2}$/.test(key))
+    .sort((a,b)=>{
+      if(a === "_comment") return -1;
+      if(b === "_comment") return 1;
+      return a.localeCompare(b);
+    })
+    .map(key=>typeof dayData[key] === "string" ? dayData[key] : "")
+    .join("");
+}
+
+async function saveDailyComment(date, text, dayData){
+  const chunks = [];
+  for(let offset = 0; offset < text.length; offset += 19){
+    chunks.push(text.slice(offset, offset + 19));
+  }
+  const oldKeys = Object.keys(dayData || {})
+    .filter(key=>key === "_comment" || /^_comment\d{2}$/.test(key));
+  const newKeys = chunks.map((_, index)=>index === 0 ? "_comment" : `_comment${String(index).padStart(2,"0")}`);
+  const saves = chunks.map((chunk, index)=>
+    db.ref(`reservations/${date}/${newKeys[index]}`).set(chunk)
+  );
+  oldKeys.filter(key=>!newKeys.includes(key)).forEach(key=>{
+    saves.push(db.ref(`reservations/${date}/${key}`).remove());
+  });
+  await Promise.all(saves);
+}
+
 function askDailyComment(date, currentComment = "", currentPhoto = ""){
   const backdrop = document.getElementById("commentDialogBackdrop");
   const form = document.getElementById("commentDialog");
@@ -1245,9 +1275,7 @@ function render(data){
       app.appendChild(notice);
     }
 
-    const currentComment = typeof data?.[date]?._comment === "string"
-      ? data[date]._comment
-      : "";
+    const currentComment = getDailyComment(data?.[date]);
     const currentCommentPhoto = typeof data?.[date]?._commentPhoto === "string"
       ? data[date]._commentPhoto
       : "";
@@ -1278,8 +1306,7 @@ function render(data){
       try{
         const saves = [];
         if(trimmed !== currentComment){
-          const commentRef = db.ref(`reservations/${date}/_comment`);
-          saves.push(trimmed ? commentRef.set(trimmed) : commentRef.remove());
+          saves.push(saveDailyComment(date, trimmed, data?.[date]));
         }
         if(input.photo !== currentCommentPhoto){
           const photoRef = db.ref(`reservations/${date}/_commentPhoto`);
