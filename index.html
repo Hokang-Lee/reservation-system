@@ -74,6 +74,11 @@ button:hover{ background:#d1d5db; }
   background:#dbeafe; color:#1e40af; font-weight:700;
 }
 .play-with-doc:hover{ background:#bfdbfe; }
+.document-heading-preview{
+  flex:0 0 auto; min-width:150px; max-width:220px; padding:9px 11px;
+  border-left:4px solid #60a5fa; border-radius:6px; background:#eff6ff;
+  color:#1e3a5f; font-size:17px; font-weight:700; line-height:1.4;
+}
 .edit-reserve{
   background:#2563eb; color:#fff; font-weight:700;
   box-shadow:0 2px 5px rgba(37,99,235,.25);
@@ -223,10 +228,15 @@ button:hover{ background:#d1d5db; }
     grid-template-columns:minmax(0,1fr) 58px;
     grid-template-areas:
       "actions edit"
+      "preview edit"
       "label edit"
       "seek seek";
     align-items:center; gap:6px 8px;
     padding:10px; margin-bottom:7px; border-radius:9px;
+  }
+  .document-heading-preview{
+    grid-area:preview; min-width:0; max-width:100%; padding:8px 10px;
+    justify-self:stretch; font-size:16px;
   }
   .row:hover{ transform:none; }
   .row-top{
@@ -307,6 +317,7 @@ button:hover{ background:#d1d5db; }
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
 <script src="document-pages.js"></script>
+<script src="document-snippets.js"></script>
 <script>
 firebase.initializeApp({
   apiKey:"AIzaSyDvjXQ5xX_jwcHcXnESjjJalCq2xqL2qIw",
@@ -1447,6 +1458,11 @@ function render(data){
         openPdfForDevice(url, `実ページ ${id}`);
       };
 
+      const documentHeading = document.createElement("div");
+      documentHeading.className = "document-heading-preview";
+      documentHeading.textContent = window.DOCUMENT_SNIPPETS?.[id] || "文章の見出し";
+      documentHeading.setAttribute("aria-label", `文章 ${id} の見出し`);
+
       top.appendChild(num);
       top.appendChild(btn);
       top.appendChild(pdfBtn);
@@ -1463,6 +1479,7 @@ function render(data){
       edit.onclick = () => editNormalSeat(date, seat, name);
 
       row.appendChild(top);
+      row.appendChild(documentHeading);
       if(canReserve){
         row.appendChild(label);
         row.appendChild(edit);
