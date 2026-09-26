@@ -80,6 +80,14 @@ h1{
   background:#f59e0b; cursor:pointer; border:2px solid #fff;
   box-shadow:0 1px 3px rgba(0,0,0,0.3);
 }
+.playback-rate-wrap{
+  display:flex; align-items:center; justify-content:flex-end; gap:8px;
+  margin-top:9px; color:#334155; font-size:14px; font-weight:700;
+}
+.playback-rate-select{
+  min-height:40px; padding:5px 9px; border:2px solid #94a3b8;
+  border-radius:8px; background:#fff; color:#0f172a; font:inherit; font-size:16px;
+}
 button{
   border:none; background:#e5e7eb; padding:6px 10px;
   border-radius:8px; cursor:pointer; transition:.2s;
@@ -386,6 +394,21 @@ if(window.pdfjsLib){
 // 入力した名前はこの端末内だけに保存し、次回の候補として表示する。
 const REMEMBERED_NAMES_KEY = "reservationRememberedNames";
 const MAX_REMEMBERED_NAMES = 20;
+const PLAYBACK_RATE_KEY = "reservationPlaybackRate";
+const PLAYBACK_RATES = [0.5, 0.75, 1, 1.25, 1.5];
+
+function getPlaybackRate(){
+  try{
+    const rate = Number.parseFloat(localStorage.getItem(PLAYBACK_RATE_KEY) || "1");
+    return PLAYBACK_RATES.includes(rate) ? rate : 1;
+  }catch(_){
+    return 1;
+  }
+}
+
+function savePlaybackRate(rate){
+  try{ localStorage.setItem(PLAYBACK_RATE_KEY, String(rate)); }catch(_){}
+}
 
 function getRememberedNames(){
   try{
@@ -962,6 +985,10 @@ async function tryPlay(src){
   const a = new Audio();
   a.preload = "auto";
   a.src = src;
+  a.defaultPlaybackRate = getPlaybackRate();
+  a.playbackRate = getPlaybackRate();
+  a.preservesPitch = true;
+  a.webkitPreservesPitch = true;
   a.playsInline = true;
   a.setAttribute("playsinline", "");
   a.setAttribute("webkit-playsinline", "");
@@ -1001,12 +1028,24 @@ async function loadAndPlayAudio(id, row, btn, seekWrap){
   const sb  = seekWrap.querySelector(".seekbar");
   const cur = seekWrap.querySelector(".seek-cur");
   const dur = seekWrap.querySelector(".seek-dur");
+  const rateSelect = seekWrap.querySelector(".playback-rate-select");
 
   // 前回のリスナーを一括解除してから再登録
   if(seekWrap._sbAbort) seekWrap._sbAbort.abort();
   const sbAc = new AbortController();
   seekWrap._sbAbort = sbAc;
   const sig = { signal: sbAc.signal };
+
+  rateSelect.value = String(getPlaybackRate());
+  rateSelect.addEventListener("change", ()=>{
+    const rate = Number(rateSelect.value);
+    if(!PLAYBACK_RATES.includes(rate)) return;
+    savePlaybackRate(rate);
+    if(viewerAudio === audio){
+      audio.defaultPlaybackRate = rate;
+      audio.playbackRate = rate;
+    }
+  }, sig);
 
   const initSeek = ()=>{
     if(isFinite(audio.duration)){
@@ -1437,7 +1476,16 @@ function render(data){
           `<span class="seek-cur">0:00</span>` +
           `<span class="seek-dur">0:00</span>` +
         `</div>` +
-        `<input class="seekbar" type="range" min="0" max="100" step="0.1" value="0">`;
+        `<input class="seekbar" type="range" min="0" max="100" step="0.1" value="0">` +
+        `<label class="playback-rate-wrap">再生速度` +
+          `<select class="playback-rate-select" aria-label="音声の再生速度">` +
+            `<option value="0.5">0.5倍</option>` +
+            `<option value="0.75">0.75倍</option>` +
+            `<option value="1">1.0倍</option>` +
+            `<option value="1.25">1.25倍</option>` +
+            `<option value="1.5">1.5倍</option>` +
+          `</select>` +
+        `</label>`;
 
       const btn = document.createElement("button");
       btn.className = "play";
