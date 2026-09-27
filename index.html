@@ -82,12 +82,14 @@ h1{
 }
 .playback-rate-wrap{
   display:flex; align-items:center; justify-content:flex-end; gap:8px;
-  margin-top:9px; color:#334155; font-size:14px; font-weight:700;
+  margin-top:9px; color:#2563eb; font-size:14px; font-weight:700;
 }
 .playback-rate-select{
-  min-height:40px; padding:5px 9px; border:2px solid #94a3b8;
-  border-radius:8px; background:#fff; color:#0f172a; font:inherit; font-size:16px;
+  min-height:40px; padding:5px 9px; border:2px solid #2563eb;
+  border-radius:8px; background:#2563eb; color:#fff; font:inherit; font-size:16px;
 }
+.playback-rate-select option{ background:#fff; color:#0f172a; }
+.guide-playback-rate{ color:#2563eb; }
 button{
   border:none; background:#e5e7eb; padding:6px 10px;
   border-radius:8px; cursor:pointer; transition:.2s;
@@ -1261,7 +1263,8 @@ function render(data){
   guide.innerHTML =
     "<div><strong>▶</strong>：音声のみ（再生・一時停止・再開）</div>" +
     "<div><strong>▶文章</strong>：音声＋文章</div>" +
-    "<div><strong>▶実頁</strong>：音声＋書籍実ページ</div>";
+    "<div><strong>▶実頁</strong>：音声＋書籍実ページ</div>" +
+    "<div>音声再生中は、<strong class=\"guide-playback-rate\">再生速度</strong>で0.5〜1.5倍に調整できます。</div>";
   app.appendChild(guide);
 
   const today = new Date();
