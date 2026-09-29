@@ -1,0 +1,22 @@
+{
+  "rules": {
+    ".read": true,
+    "reservations": {
+      "_system": {
+        ".write": false
+      },
+      "$date": {
+        "$item": {
+          ".write": "$date.matches(/^202[67]-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$/) && (($item.matches(/^(?:[1-9]|[1-9][0-9]|1[0-8][0-9]|19[0-2])$/)) || $item.matches(/^_comment(?:0[1-9]|10)?$/))",
+          ".validate": "(($item.matches(/^(?:[1-9]|[1-9][0-9]|1[0-8][0-9]|19[0-2])$/)) && newData.isString() && newData.val().length <= 40) || (($item === '_comment' || $item.matches(/^_comment0[1-9]$/)) && newData.isString() && newData.val().length <= 19) || ($item === '_comment10' && newData.isString() && newData.val().length <= 10)"
+        }
+      }
+    },
+    "accessCounts": {
+      ".write": true,
+      "total": {
+        ".validate": "newData.isString() && newData.val().matches(/^[0-9]+$/)"
+      }
+    }
+  }
+}

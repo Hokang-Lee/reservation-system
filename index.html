@@ -370,20 +370,31 @@ function localDateKey(){
 
 function setupAccessCounter(){
   const display = document.getElementById("accessCounter");
-  const ref = db.ref("reservations/_system/_accessCount");
+  // 予約データ内の _system は書込み禁止にするため、アクセス数は専用の場所に保存する。
+  const ref = db.ref("accessCounts/total");
+  const legacyRef = db.ref("reservations/_system/_accessCount");
+  let hasNewCount = false;
   ref.on("value", snapshot=>{
     const count = Number.parseInt(snapshot.val(), 10);
-    display.textContent = `アクセス：${Number.isFinite(count) ? count.toLocaleString("ja-JP") : 0}回`;
+    hasNewCount = snapshot.exists();
+    if(hasNewCount){
+      display.textContent = `アクセス：${Number.isFinite(count) ? count.toLocaleString("ja-JP") : 0}回`;
+    }
   });
 
   const today = localDateKey();
   let countedDate = "";
   try{ countedDate = localStorage.getItem(ACCESS_COUNT_DATE_KEY) || ""; }catch(_){}
-  if(countedDate === today) return;
-
-  ref.transaction(current=>String((Number.parseInt(current, 10) || 0) + 1), (error, committed)=>{
-    if(error || !committed) return;
-    try{ localStorage.setItem(ACCESS_COUNT_DATE_KEY, today); }catch(_){}
+  legacyRef.once("value").then(snapshot=>{
+    const legacyCount = Number.parseInt(snapshot.val(), 10) || 0;
+    if(!hasNewCount){
+      display.textContent = `アクセス：${legacyCount.toLocaleString("ja-JP")}回`;
+    }
+    if(countedDate === today) return;
+    ref.transaction(current=>String((Number.parseInt(current, 10) || legacyCount) + 1), (error, committed)=>{
+      if(error || !committed) return;
+      try{ localStorage.setItem(ACCESS_COUNT_DATE_KEY, today); }catch(_){}
+    });
   });
 }
 
@@ -410,6 +421,10 @@ function getPlaybackRate(){
 
 function savePlaybackRate(rate){
   try{ localStorage.setItem(PLAYBACK_RATE_KEY, String(rate)); }catch(_){}
+}
+
+function confirmDeletion(itemName){
+  return confirm(`「${itemName}」を削除しますか？\nこの操作は元に戻せません。`);
 }
 
 function getRememberedNames(){
@@ -1246,6 +1261,7 @@ async function editNormalSeat(date, seat, currentName){
   const ref = db.ref(`reservations/${date}/${seat}`);
   const trimmed = input.trim();
   if(trimmed === ""){
+    if(currentName && !confirmDeletion(`${date} の ${seat}番の予約`)) return;
     ref.remove();
   }else{
     rememberName(trimmed);
@@ -1349,6 +1365,7 @@ function render(data){
       try{
         const saves = [];
         if(trimmed !== currentComment){
+          if(!trimmed && currentComment && !confirmDeletion(`${date} の共有メモ`)) return;
           saves.push(saveDailyComment(date, trimmed, data?.[date]));
         }
         await Promise.all(saves);
@@ -1403,8 +1420,9 @@ function render(data){
           const trimmed = input.trim();
           const ref = db.ref(`reservations/${date}/${seat}`);
 
-          // 空欄＝削除（確認なし）
+          // 空欄＝削除
           if(trimmed === ""){
+            if(name && !confirmDeletion(`${date} の ${seat}番の予約`)) return;
             ref.remove();
             return;
           }
