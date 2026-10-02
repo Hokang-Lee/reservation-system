@@ -297,7 +297,7 @@ button:hover{ background:#d1d5db; }
 </head>
 <body>
 
-<h1><span>予習機能付き<br>訓読予約</span><span id="accessCounter" class="access-counter">アクセス：--回</span></h1>
+<h1><span>予習機能付き<br>訓読予約</span><span id="accessCounter" class="access-counter">アクセス端末：--台</span></h1>
 <div id="app"></div>
 
 <div id="nameDialogBackdrop" class="name-dialog-backdrop" role="presentation">
@@ -357,44 +357,43 @@ firebase.initializeApp({
   projectId:"reservation-2026"
 });
 const db = firebase.database();
-const ACCESS_COUNT_DATE_KEY = "reservationAccessCountedDate";
+const ACCESS_DEVICE_ID_KEY = "reservationAccessDeviceId";
 
-function localDateKey(){
-  const now = new Date();
-  return [
-    now.getFullYear(),
-    String(now.getMonth() + 1).padStart(2, "0"),
-    String(now.getDate()).padStart(2, "0")
-  ].join("-");
+function createAccessDeviceId(){
+  if(window.crypto && typeof window.crypto.randomUUID === "function"){
+    return window.crypto.randomUUID().replace(/[^A-Za-z0-9_-]/g, "_");
+  }
+  const randomPart = Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
+  return `device_${Date.now().toString(36)}_${randomPart}`.slice(0, 80);
+}
+
+function getOrCreateAccessDeviceId(){
+  try{
+    const current = localStorage.getItem(ACCESS_DEVICE_ID_KEY) || "";
+    if(/^[A-Za-z0-9_-]{8,80}$/.test(current)) return current;
+    const next = createAccessDeviceId();
+    localStorage.setItem(ACCESS_DEVICE_ID_KEY, next);
+    return localStorage.getItem(ACCESS_DEVICE_ID_KEY) === next ? next : "";
+  }catch(_){
+    return "";
+  }
 }
 
 function setupAccessCounter(){
   const display = document.getElementById("accessCounter");
-  // 予約データ内の _system は書込み禁止にするため、アクセス数は専用の場所に保存する。
-  const ref = db.ref("accessCounts/total");
-  const legacyRef = db.ref("reservations/_system/_accessCount");
-  let hasNewCount = false;
-  ref.on("value", snapshot=>{
+  const totalRef = db.ref("accessCounts/uniqueDevices/total");
+  const deviceId = getOrCreateAccessDeviceId();
+  totalRef.on("value", snapshot=>{
     const count = Number.parseInt(snapshot.val(), 10);
-    hasNewCount = snapshot.exists();
-    if(hasNewCount){
-      display.textContent = `アクセス：${Number.isFinite(count) ? count.toLocaleString("ja-JP") : 0}回`;
-    }
+    display.textContent = `アクセス端末：${Number.isFinite(count) ? count.toLocaleString("ja-JP") : 0}台`;
   });
-
-  const today = localDateKey();
-  let countedDate = "";
-  try{ countedDate = localStorage.getItem(ACCESS_COUNT_DATE_KEY) || ""; }catch(_){}
-  legacyRef.once("value").then(snapshot=>{
-    const legacyCount = Number.parseInt(snapshot.val(), 10) || 0;
-    if(!hasNewCount){
-      display.textContent = `アクセス：${legacyCount.toLocaleString("ja-JP")}回`;
-    }
-    if(countedDate === today) return;
-    ref.transaction(current=>String((Number.parseInt(current, 10) || legacyCount) + 1), (error, committed)=>{
-      if(error || !committed) return;
-      try{ localStorage.setItem(ACCESS_COUNT_DATE_KEY, today); }catch(_){}
-    });
+  if(!deviceId) return;
+  db.ref(`accessCounts/uniqueDevices/devices/${deviceId}`).transaction(current=>{
+    if(current) return;
+    return { countedAt: firebase.database.ServerValue.TIMESTAMP };
+  }, (error, committed)=>{
+    if(error || !committed) return;
+    totalRef.transaction(current=>String((Number.parseInt(current, 10) || 0) + 1));
   });
 }
 

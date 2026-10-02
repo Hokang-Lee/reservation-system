@@ -16,6 +16,16 @@
       ".write": true,
       "total": {
         ".validate": "newData.isString() && newData.val().matches(/^[0-9]+$/)"
+      },
+      "uniqueDevices": {
+        "total": {
+          ".validate": "newData.isString() && newData.val().matches(/^[0-9]+$/)"
+        },
+        "devices": {
+          "$deviceId": {
+            ".validate": "newData.hasChildren(['countedAt']) && newData.child('countedAt').isNumber()"
+          }
+        }
       }
     }
   }
