@@ -1403,6 +1403,43 @@ function render(data){
     commentRow.appendChild(commentButton);
     app.appendChild(commentRow);
 
+    const words = getDailyKoreanWords(date);
+    if(words.length){
+      const expressionBox = document.createElement("div");
+      expressionBox.className = "daily-korean-expression";
+      expressionBox.setAttribute("role", "note");
+      expressionBox.setAttribute("aria-label", `${date} の重要な韓国語単語`);
+
+      const expressionLabel = document.createElement("span");
+      expressionLabel.className = "daily-korean-expression-label";
+      expressionLabel.textContent = "今日の重要単語";
+
+      const expressionList = document.createElement("div");
+      expressionList.className = "daily-korean-expression-list";
+      words.forEach(word => {
+        const item = document.createElement("div");
+        item.className = "daily-korean-expression-item";
+
+        const term = document.createElement("div");
+        term.className = "daily-korean-expression-term";
+        term.textContent = word.word;
+
+        const meaning = document.createElement("div");
+        meaning.className = "daily-korean-expression-meaning";
+        meaning.textContent = `意味：${word.meaning}`;
+
+        const example = document.createElement("div");
+        example.className = "daily-korean-expression-example";
+        example.textContent = `例文：${word.example}`;
+
+        item.append(term, meaning, example);
+        expressionList.appendChild(item);
+      });
+
+      expressionBox.append(expressionLabel, expressionList);
+      app.appendChild(expressionBox);
+    }
+
     // ===== 1日目：縦並び（席番号＋名前表示＋予約/編集）=====
     if(roundDay === 1){
       FIRST_DAY_SEATS.forEach(seat => {
