@@ -206,6 +206,18 @@ button:hover{ background:#d1d5db; }
   font-size:15px; font-weight:700; white-space:nowrap;
 }
 .daily-comment-button:hover{ background:#1d4ed8; }
+.daily-korean-expression{
+  margin:7px 0 10px; padding:9px 12px; border-left:5px solid #2563eb;
+  border-radius:8px; background:#f8fbff; color:#1e3a5f; line-height:1.55;
+}
+.daily-korean-expression-label{
+  display:block; margin-bottom:2px; color:#2563eb; font-size:13px; font-weight:800;
+}
+.daily-korean-expression-list{ display:grid; gap:8px; }
+.daily-korean-expression-item{ padding:8px 10px; border-radius:7px; background:#fff; }
+.daily-korean-expression-term{ color:#1d4ed8; font-size:16px; font-weight:800; overflow-wrap:anywhere; }
+.daily-korean-expression-meaning{ margin-top:3px; color:#334155; font-size:14px; overflow-wrap:anywhere; }
+.daily-korean-expression-example{ margin-top:4px; color:#475569; font-size:14px; overflow-wrap:anywhere; }
 .pdf-status{
   margin:24px auto; padding:16px; max-width:420px; border-radius:10px;
   background:#fff; text-align:center; font-size:17px; line-height:1.6;
@@ -252,6 +264,8 @@ button:hover{ background:#d1d5db; }
   }
   .daily-comment-text{ font-size:15px; }
   .daily-comment-button{ width:92px; padding:7px 6px; font-size:14px; }
+  .daily-korean-expression{ padding:8px 10px; }
+  .daily-korean-expression-term{ font-size:15px; }
   .title:first-child{ margin-top:0; }
   .remain{ margin:6px 2px 8px; font-size:14px; }
   .row{
@@ -349,6 +363,7 @@ button:hover{ background:#d1d5db; }
 <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
 <script src="document-pages.js"></script>
 <script src="document-snippets.js"></script>
+<script src="korean-expressions.js"></script>
 <script>
 firebase.initializeApp({
   apiKey:"AIzaSyDvjXQ5xX_jwcHcXnESjjJalCq2xqL2qIw",
@@ -1242,6 +1257,16 @@ let visibleDateCount = DATES_PER_PAGE;
 
 function formatSeat(n){
   return String(n).padStart(3,"0");
+}
+
+function getDailyKoreanWords(date){
+  const seats = getSeatList(date).filter(seat => seat <= 192);
+  if(!seats.length || !window.KOREAN_WORDS) return [];
+  const roundIndex = Math.floor(diffDays(parseDateLocal(ROUND_START), parseDateLocal(date)) / ROUND_DAYS);
+  return [0, 1]
+    .map(offset => formatSeat(seats[(roundIndex + offset) % seats.length]))
+    .map(documentId => window.KOREAN_WORDS[documentId])
+    .filter(word => word?.word && word?.example);
 }
 
 async function editNormalSeat(date, seat, currentName){
