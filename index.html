@@ -1260,13 +1260,11 @@ function formatSeat(n){
 }
 
 function getDailyKoreanWords(date){
-  const seats = getSeatList(date).filter(seat => seat <= 192);
-  if(!seats.length || !window.KOREAN_WORDS) return [];
-  const roundIndex = Math.floor(diffDays(parseDateLocal(ROUND_START), parseDateLocal(date)) / ROUND_DAYS);
+  const wordList = window.KOREAN_WORD_LIST;
+  if(!wordList?.length) return [];
+  const dayIndex = Math.max(0, diffDays(parseDateLocal(ROUND_START), parseDateLocal(date)));
   return [0, 1]
-    .map(offset => formatSeat(seats[(roundIndex + offset) % seats.length]))
-    .map(documentId => window.KOREAN_WORDS[documentId])
-    .filter(word => word?.word && word?.example);
+    .map(offset => wordList[(dayIndex * 2 + offset) % wordList.length]);
 }
 
 async function editNormalSeat(date, seat, currentName){
