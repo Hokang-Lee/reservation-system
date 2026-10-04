@@ -216,6 +216,7 @@ button:hover{ background:#d1d5db; }
 .daily-korean-expression-list{ display:grid; gap:8px; }
 .daily-korean-expression-item{ padding:8px 10px; border-radius:7px; background:#fff; }
 .daily-korean-expression-term{ color:#1d4ed8; font-size:16px; font-weight:800; overflow-wrap:anywhere; }
+.daily-korean-expression-pronunciation{ margin-top:2px; color:#0f766e; font-size:14px; font-weight:700; overflow-wrap:anywhere; }
 .daily-korean-expression-meaning{ margin-top:3px; color:#334155; font-size:14px; overflow-wrap:anywhere; }
 .daily-korean-expression-example{ margin-top:4px; color:#475569; font-size:14px; overflow-wrap:anywhere; }
 .pdf-status{
@@ -1422,6 +1423,10 @@ function render(data){
         term.className = "daily-korean-expression-term";
         term.textContent = word.word;
 
+                const pronunciation = document.createElement("div");
+        pronunciation.className = "daily-korean-expression-pronunciation";
+        pronunciation.textContent = `発音：${word.pronunciation}　IPA：/${word.ipa}/
+
         const meaning = document.createElement("div");
         meaning.className = "daily-korean-expression-meaning";
         meaning.textContent = `意味：${word.meaning}`;
@@ -1430,7 +1435,7 @@ function render(data){
         example.className = "daily-korean-expression-example";
         example.textContent = `例文：${word.example}`;
 
-        item.append(term, meaning, example);
+        item.append(term, pronunciation, meaning, example);
         expressionList.appendChild(item);
       });
 

@@ -2,301 +2,421 @@
 window.KOREAN_WORD_LIST = [
   {
     "word": "하늘부모님",
+    "pronunciation": "ハヌルプモニム",
+    "ipa": "ha.nɯl.bu.mo.nim",
     "meaning": "天の父母様",
     "example": "고 인류력사가 완성되는 때를 맞이하여 하늘부모님으로 새롭게 현현"
   },
   {
     "word": "참부모님",
+    "pronunciation": "チャムブモニム",
+    "ipa": "tɕʰam.bu.mo.nim",
     "meaning": "真の父母様",
     "example": "하늘부모님은 한민족으로 하여금 장차 오실 참부모님께서 인류를"
   },
   {
     "word": "독생녀",
+    "pronunciation": "トクセンニョ",
+    "ipa": "tok.s͈ɛŋ.njʌ",
     "meaning": "ひとり娘",
     "example": "신의 형상을 닮은 독생자와 독생녀를 창조하시고 , \" 생육하고 번성하"
   },
   {
     "word": "독생자",
+    "pronunciation": "トクセンジャ",
+    "ipa": "tok.s͈ɛŋ.dʑa",
     "meaning": "ひとり子",
     "example": "신의 형상을 닮은 독생자와 독생녀를 창조하시고 , \" 생육하고 번성하"
   },
   {
     "word": "한민족",
+    "pronunciation": "ハンミンジョク",
+    "ipa": "han.min.dʑok",
     "meaning": "韓民族",
     "example": "미래를 바꿀 한민족"
   },
   {
     "word": "대한민국",
+    "pronunciation": "テハンミングク",
+    "ipa": "tɛ.han.min.ɡuk",
     "meaning": "大韓民国",
     "example": "적 위기 상황 속에서 대한민국의 비전과 한반도 平和를 위한 길을 못"
   },
   {
     "word": "한반도",
+    "pronunciation": "ハンバンド",
+    "ipa": "han.pan.do",
     "meaning": "朝鮮半島",
     "example": "한반도를 둘러싼 군사적 긴장이 최고조에 이르고 있으며 내외적 국가"
   },
   {
     "word": "기독교",
+    "pronunciation": "キドッキョ",
+    "ipa": "ki.dok.kjo",
     "meaning": "キリスト教",
     "example": "시조의 타락으로 인해, 하늘부모님의 섭리는 이스라엘 민족과 기독교"
   },
   {
     "word": "불교",
+    "pronunciation": "プルギョ",
+    "ipa": "pul.ɡjo",
     "meaning": "仏教",
     "example": "대 유교, 불교, 도교가 들어온 뒤 제, 상제, 제석으로 바뀌어 불리기도"
   },
   {
     "word": "유교",
+    "pronunciation": "ユギョ",
+    "ipa": "ju.ɡjo",
     "meaning": "儒教",
     "example": "대 유교, 불교, 도교가 들어온 뒤 제, 상제, 제석으로 바뀌어 불리기도"
   },
   {
     "word": "하나님",
+    "pronunciation": "ハナニム",
+    "ipa": "ha.na.nim",
     "meaning": "神",
     "example": "름으로 불렸으며 , 우리 민족은 하늘, 한울님, 하느님 하나님으로 그"
   },
   {
     "word": "환웅",
+    "pronunciation": "ファヌン",
+    "ipa": "hwan.uŋ",
     "meaning": "桓雄",
     "example": "한울님) 환인의 아들 환웅(桓雄)은 인간 세상을 다스리기 위해 하늘에서"
   },
   {
     "word": "호랑이",
+    "pronunciation": "ホランイ",
+    "ipa": "ho.ɾaŋ.i",
     "meaning": "虎",
     "example": "어느 날 곰과 호랑이가 환웅을 찾아가 사람이 되고자 환웅에게 빌"
   },
   {
     "word": "곰",
+    "pronunciation": "コム",
+    "ipa": "kom",
     "meaning": "熊",
     "example": "어느 날 곰과 호랑이가 환웅을 찾아가 사람이 되고자 환웅에게 빌"
   },
   {
     "word": "한글",
+    "pronunciation": "ハングル",
+    "ipa": "han.ɡɯl",
     "meaning": "ハングル",
     "example": "6-1 하늘부모님의 심정을 담은 독창적인 문자 체계, 한글"
   },
   {
     "word": "자음",
+    "pronunciation": "チャウム",
+    "ipa": "tɕa.ɯm",
     "meaning": "子音",
     "example": "한글의 자음과 모음은 발음기관의 모양을 본떠 만들어졌으며 ,각"
   },
   {
     "word": "모음",
+    "pronunciation": "モウム",
+    "ipa": "mo.ɯm",
     "meaning": "母音",
     "example": "한글의 자음과 모음은 발음기관의 모양을 본떠 만들어졌으며 ,각"
   },
   {
     "word": "발음",
+    "pronunciation": "パルム",
+    "ipa": "pa.ɾɯm",
     "meaning": "発音",
     "example": "한글의 자음과 모음은 발음기관의 모양을 본떠 만들어졌으며 ,각"
   },
   {
     "word": "일본군",
+    "pronunciation": "イルボングン",
+    "ipa": "il.bon.ɡun",
     "meaning": "日本軍",
     "example": "의장군'으로 불리며, 경상도 의령에서 의병을 일으켜 일본군과 싸웠"
   },
   {
     "word": "김일성",
+    "pronunciation": "キム・イルソン",
+    "ipa": "kim.il.s͈ʌŋ",
     "meaning": "金日成",
     "example": "1950 년 김일성의 북한정권은 한반도를 공산화하기 위해 남한을 침"
   },
   {
     "word": "역사",
+    "pronunciation": "ヨクサ",
+    "ipa": "jʌk.s͈a",
     "meaning": "歴史",
     "example": "위한 복귀섭리역사를 펼쳐 나오셨다."
   },
   {
     "word": "인류",
+    "pronunciation": "インニュ",
+    "ipa": "il.lju",
     "meaning": "人類",
     "example": "인류력사는 그 자분으로 서사입니다."
   },
   {
     "word": "민족",
+    "pronunciation": "ミンジョク",
+    "ipa": "min.dʑok",
     "meaning": "民族",
     "example": "미래를 바꿀 한민족"
   },
   {
     "word": "세계",
+    "pronunciation": "セゲ",
+    "ipa": "se.ɡje",
     "meaning": "世界",
     "example": "인류구원과 통일된 세계를 이끌어 갈 민족으로 성장해왔음을 깨닫게"
   },
   {
     "word": "평화",
+    "pronunciation": "ピョンファ",
+    "ipa": "pʰjʌŋ.hwa",
     "meaning": "平和",
     "example": "의 이해관계를 넘어 진정한 한민족의 미래와 평화를 이루기 위한 새"
   },
   {
     "word": "사랑",
+    "pronunciation": "サラン",
+    "ipa": "sa.ɾaŋ",
     "meaning": "愛",
     "example": "보호의 인도 아래, 고난과 역정을 딛고 평화와 정의, 사랑을 향한 길"
   },
   {
     "word": "희망",
+    "pronunciation": "ヒマン",
+    "ipa": "hi.maŋ",
     "meaning": "希望",
     "example": "를 해결할 수 있는 희망은 어디에 있을까요?"
   },
   {
     "word": "문화",
+    "pronunciation": "ムナ",
+    "ipa": "mun.hwa",
     "meaning": "文化",
     "example": "반도에 정착하여 한씨 왕조와 더불어 독특 한 문화와 종교적 전통을"
   },
   {
     "word": "전통",
+    "pronunciation": "チョントン",
+    "ipa": "tɕʌn.tʰoŋ",
     "meaning": "伝統",
     "example": "전통은 한민족을 하늘부모님께서 선택한 특별한 민족으로 만들어 왔"
   },
   {
     "word": "정체성",
+    "pronunciation": "チョンチェソン",
+    "ipa": "tɕʌŋ.tɕʰe.s͈ʌŋ",
     "meaning": "アイデンティティ",
     "example": "며 하늘부모님의 자녀라는 역사적 정체성을 강화해 왔다."
   },
   {
     "word": "신앙",
+    "pronunciation": "シナン",
+    "ipa": "ɕin.aŋ",
     "meaning": "信仰",
     "example": "한민족은 고대부터 하늘부모님과 깊은 신앙적"
   },
   {
     "word": "가정",
+    "pronunciation": "カジョン",
+    "ipa": "ka.dʑʌŋ",
     "meaning": "家庭",
     "example": "와 대한민국이 직면하고 있는 불평등, 반평화, 인구절벽, 가정붕괴, 남"
   },
   {
     "word": "가족",
+    "pronunciation": "カジョク",
+    "ipa": "ka.dʑok",
     "meaning": "家族",
     "example": "님을 중심으로 한 인류 대가족을 이루고자 하셨습니다."
   },
   {
     "word": "조국",
+    "pronunciation": "チョグク",
+    "ipa": "tɕo.ɡuk",
     "meaning": "祖国",
     "example": "앙인이자 일제강점기 독립운동가로 , 하늘부모님의 뜻을 받들어 조국"
   },
   {
     "word": "한국",
+    "pronunciation": "ハングク",
+    "ipa": "han.ɡuk",
     "meaning": "韓国",
     "example": "고대 한국의 신앙은 하늘부모님에 대한 공경과 숭배를 중심으로"
   },
   {
     "word": "조선",
+    "pronunciation": "チョソン",
+    "ipa": "tɕo.sʌn",
     "meaning": "朝鮮",
     "example": "조선으로 이어지는 가운데 현재 한반도 내 한민족과 대한민국의 시원"
   },
   {
     "word": "독립",
+    "pronunciation": "トンニプ",
+    "ipa": "toŋ.nip",
     "meaning": "独立",
     "example": "이를 위해 천도교는 현대적인 사상을 접목하여 항일독립운동뿐 아"
   },
   {
     "word": "통일",
+    "pronunciation": "トンイル",
+    "ipa": "tʰoŋ.il",
     "meaning": "統一",
     "example": "인류구원과 통일된 세계를 이끌어 갈 민족으로 성장해왔음을 깨닫게"
   },
   {
     "word": "자유",
+    "pronunciation": "チャユ",
+    "ipa": "tɕa.ju",
     "meaning": "自由",
     "example": "마음의 자유를 추구한 한민족의 영성에 영향을 주면서, 윤리적 이상"
   },
   {
     "word": "정의",
+    "pronunciation": "チョンイ",
+    "ipa": "tɕʌŋ.ɰi",
     "meaning": "正義",
     "example": "보호의 인도 아래, 고난과 역정을 딛고 평화와 정의, 사랑을 향한 길"
   },
   {
     "word": "생명",
+    "pronunciation": "センミョン",
+    "ipa": "sɛŋ.mjʌŋ",
     "meaning": "生命",
     "example": "'한'과 생명의 뿌리를 뜻하는 '어머니'를 합쳐서 만든 말로 우주와 생명"
   },
   {
     "word": "창조",
+    "pronunciation": "チャンジョ",
+    "ipa": "tɕʰaŋ.dʑo",
     "meaning": "創造",
     "example": "각 민족과 종교마다 하늘에 계시는 창조주를 부르는 호칭"
   },
   {
     "word": "미래",
+    "pronunciation": "ミレ",
+    "ipa": "mi.ɾɛ",
     "meaning": "未来",
     "example": "미래를 바꿀 한민족"
   },
   {
     "word": "꿈",
+    "pronunciation": "クム",
+    "ipa": "k͈um",
     "meaning": "夢",
     "example": "꿈꾸며 그 목적과 방향으로 도도하게 흘러가고 있습니다."
   },
   {
     "word": "비전",
+    "pronunciation": "ピジョン",
+    "ipa": "pi.dʑʌn",
     "meaning": "ビジョン",
     "example": "적 위기 상황 속에서 대한민국의 비전과 한반도 平和를 위한 길을 못"
   },
   {
     "word": "지혜",
+    "pronunciation": "チヘ",
+    "ipa": "tɕi.hje",
     "meaning": "知恵",
     "example": "한민족은 예로부터 위기 속에서 하늘을 바라보며 지혜를 간구해"
   },
   {
     "word": "도덕",
+    "pronunciation": "トドク",
+    "ipa": "to.dʌk",
     "meaning": "道徳",
     "example": "하며, 이를 통해 국민들에게 도덕적 기준과 륜리적 가치를 제공합니"
   },
   {
     "word": "책임",
+    "pronunciation": "チェギム",
+    "ipa": "tɕʰɛ.gim",
     "meaning": "責任",
     "example": "리적 중심인물들과 유대민족이 섭리적 책임을 못 해 독생녀를 보내시"
   },
   {
     "word": "역할",
+    "pronunciation": "ヨカル",
+    "ipa": "jʌ.kʰal",
     "meaning": "役割",
     "example": "역할을 부여 받았음을 상기시립니다."
   },
   {
     "word": "교육",
+    "pronunciation": "キョユク",
+    "ipa": "kjo.juk",
     "meaning": "教育",
     "example": "서와 학문에 정진하도록 교육하였다."
   },
   {
     "word": "지도자",
+    "pronunciation": "チドジャ",
+    "ipa": "tɕi.do.dʑa",
     "meaning": "指導者",
     "example": "내렸으며, 여러 종교적 지도자들은 한민족의 정신적, 도덕적지도자로"
   },
   {
     "word": "발전",
+    "pronunciation": "パルチョン",
+    "ipa": "pal.dʑʌn",
     "meaning": "発展",
     "example": "으로 전 인류가 지지하고 발전해 나온 공의(公儀)정신에 입각한 민족적"
   },
   {
     "word": "사회",
+    "pronunciation": "サフェ",
+    "ipa": "sa.hwe",
     "meaning": "社会",
     "example": "한민족이 자신들의 뿌리와 전통을 깊이 이해하고 , 현대사회 속에서"
   },
   {
     "word": "국가",
+    "pronunciation": "クッカ",
+    "ipa": "kuk.k͈a",
     "meaning": "国家",
     "example": "한반도를 둘러싼 군사적 긴장이 최고조에 이르고 있으며 내외적 국가"
   },
   {
     "word": "인간",
+    "pronunciation": "インガン",
+    "ipa": "in.ɡan",
     "meaning": "人間",
     "example": "물, 해와 달, 동물과 인간을 창조하셨다."
   },
   {
     "word": "마음",
+    "pronunciation": "マウム",
+    "ipa": "ma.ɯm",
     "meaning": "心",
     "example": "에서 몇천 년 동안 뿌리내려왔으며 , 남을 위하는 착한 마음씨와 나라"
   },
   {
     "word": "감사",
+    "pronunciation": "カムサ",
+    "ipa": "kam.sa",
     "meaning": "感謝",
     "example": "이들은 주로 1 년의 농사에 감사하는 추수감사의 의미를 담아 하늘부"
   },
   {
     "word": "효정",
+    "pronunciation": "ヒョジョン",
+    "ipa": "hjo.dʑʌŋ",
     "meaning": "孝情",
     "example": "하늘부모님에 대한 지극한 효정과 정절의 문화는 이러한 가치를 생활"
   },
   {
     "word": "축복",
+    "pronunciation": "チュクポク",
+    "ipa": "tɕʰuk.pok",
     "meaning": "祝福",
     "example": "여 만물을 주관하라\"는 축복을 주셨습니다."
   },
   {
     "word": "하늘",
+    "pronunciation": "ハヌル",
+    "ipa": "ha.nɯl",
     "meaning": "天・空",
     "example": "한민족은 예로부터 위기 속에서 하늘을 바라보며 지혜를 간구해"
   }
