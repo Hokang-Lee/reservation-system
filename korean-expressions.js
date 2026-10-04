@@ -750,6 +750,36 @@ window.KOREAN_PEOPLE_BY_DOCUMENT = {
       "example": "이러한 대부흥운동을 이끈 길선주 목사는 평안남도 안주 출신으"
     }
   ],
+  "128": [
+    {
+      "name": "이승만",
+      "pronunciation": "イ・スンマン",
+      "japaneseName": "李承晩",
+      "example": "특히 1919 년 2 월 이승만을"
+    }
+  ],
+  "129": [
+    {
+      "name": "이승만",
+      "pronunciation": "イ・スンマン",
+      "japaneseName": "李承晩",
+      "example": "이승만과 민족 지도자들은 '대한독립선언서 '를 통해 우리 대한은"
+    }
+  ],
+  "141": [
+    {
+      "name": "이승만",
+      "pronunciation": "イ・スンマン",
+      "japaneseName": "李承晩",
+      "example": "파죽지세로 남하하자, 이승만 대통령이 미국에 지원을 요청하면서 유"
+    },
+    {
+      "name": "김일성",
+      "pronunciation": "キム・イルソン",
+      "japaneseName": "金日成",
+      "example": "1950 년 김일성의 북한정권은 한반도를 공산화하기 위해 남한을 침"
+    }
+  ],
   "140": [
     {
       "name": "김구",
@@ -838,14 +868,6 @@ window.KOREAN_PEOPLE_BY_DOCUMENT = {
       "pronunciation": "コ・ギョンミョン",
       "japaneseName": "高敬命",
       "example": "전라도를 중심으로 활동한 고경명(高敬命)은 의병을 조직하여"
-    }
-  ],
-  "141": [
-    {
-      "name": "김일성",
-      "pronunciation": "キム・イルソン",
-      "japaneseName": "金日成",
-      "example": "1950 년 김일성의 북한정권은 한반도를 공산화하기 위해 남한을 침"
     }
   ],
   "174": [
