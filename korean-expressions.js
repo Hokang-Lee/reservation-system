@@ -421,3 +421,425 @@ window.KOREAN_WORD_LIST = [
     "example": "한민족은 예로부터 위기 속에서 하늘을 바라보며 지혜를 간구해"
   }
 ];
+window.KOREAN_PEOPLE_BY_DOCUMENT = {
+  "022": [
+    {
+      "name": "단군",
+      "pronunciation": "タングン",
+      "japaneseName": "檀君",
+      "example": "2-1 단군신화와 홍익인간"
+    }
+  ],
+  "024": [
+    {
+      "name": "단군",
+      "pronunciation": "タングン",
+      "japaneseName": "檀君",
+      "example": "자의 몸이 되어 잠시 사람으로 변한 환웅과 결혼하여 단군왕검을 낳"
+    },
+    {
+      "name": "환웅",
+      "pronunciation": "ファヌン",
+      "japaneseName": "桓雄",
+      "example": "어느 날 곰과 호랑이가 환웅을 찾아가 사람이 되고자 환웅에게 빌"
+    }
+  ],
+  "025": [
+    {
+      "name": "단군",
+      "pronunciation": "タングン",
+      "japaneseName": "檀君",
+      "example": "단군은 한민족의 시조로 홍익인간(弘益入間)뿐 아니라, 세상을 이치"
+    }
+  ],
+  "030": [
+    {
+      "name": "단군",
+      "pronunciation": "タングン",
+      "japaneseName": "檀君",
+      "example": "는 단군신화만 아니라 마고할미, 바리공주 등의 여성신화를 통해 단군"
+    }
+  ],
+  "033": [
+    {
+      "name": "단군",
+      "pronunciation": "タングン",
+      "japaneseName": "檀君",
+      "example": "이러한 사상은 단군신화와 여러 신화, 제사문화에서 잘 드러나며, 한민"
+    }
+  ],
+  "023": [
+    {
+      "name": "환웅",
+      "pronunciation": "ファヌン",
+      "japaneseName": "桓雄",
+      "example": "한울님) 환인의 아들 환웅(桓雄)은 인간 세상을 다스리기 위해 하늘에서"
+    }
+  ],
+  "066": [
+    {
+      "name": "을지문덕",
+      "pronunciation": "ウルチ・ムンドク",
+      "japaneseName": "乙支文徳",
+      "example": "고구려의 명장 을지문덕 (乙支文德)장군은 수나라의 대군을 물리친"
+    }
+  ],
+  "068": [
+    {
+      "name": "강감찬",
+      "pronunciation": "カン・ガムチャン",
+      "japaneseName": "姜邯贊",
+      "example": "고려시대 명장이었던 강감찬 (姜邯贊 )장군도 거란의 침입에 맞서"
+    }
+  ],
+  "067": [
+    {
+      "name": "광개토대왕",
+      "pronunciation": "クァンゲト大王",
+      "japaneseName": "広開土王",
+      "example": "그보다 앞서 고구려의 광개토대왕(374~413) 은 외적에 대한 방어를"
+    }
+  ],
+  "082": [
+    {
+      "name": "세종대왕",
+      "pronunciation": "セジョン大王",
+      "japaneseName": "世宗大王",
+      "example": "한글은 세종대왕이 1443 년에 창제한 한국의독창"
+    }
+  ],
+  "084": [
+    {
+      "name": "세종대왕",
+      "pronunciation": "セジョン大王",
+      "japaneseName": "世宗大王",
+      "example": "한글은 세종대왕이 1443 년 '애민정신(愛民精神)'에"
+    }
+  ],
+  "088": [
+    {
+      "name": "세종대왕",
+      "pronunciation": "セジョン大王",
+      "japaneseName": "世宗大王",
+      "example": "이후 세종대왕은 천체의 위치와 움직임을 정확하게 관측하"
+    }
+  ],
+  "089": [
+    {
+      "name": "세종대왕",
+      "pronunciation": "セジョン大王",
+      "japaneseName": "世宗大王",
+      "example": "조선시대 세종대왕 때 발명된 앙부일구(仰釜日晷)는 북반구의 위도에 맞"
+    }
+  ],
+  "091": [
+    {
+      "name": "세종대왕",
+      "pronunciation": "セジョン大王",
+      "japaneseName": "世宗大王",
+      "example": "1429 년 조선 세종대왕 시기에 정초(鄭招)와 변효문(邊孝文)등이 편찬하"
+    }
+  ],
+  "092": [
+    {
+      "name": "장영실",
+      "pronunciation": "チャン・ヨンシル",
+      "japaneseName": "蒋英実",
+      "example": "기는 강수량을 측정하는 기구로, 장영실이 개발한 세계 최초의 강우"
+    }
+  ],
+  "103": [
+    {
+      "name": "문익점",
+      "pronunciation": "ムン・イクチョム",
+      "japaneseName": "文益漸",
+      "example": "에서 목화씨를 들여와 백성들의 입을 옷을 개선시킨 문익점 (文益漸,"
+    }
+  ],
+  "070": [
+    {
+      "name": "이순신",
+      "pronunciation": "イ・スンシン",
+      "japaneseName": "李舜臣",
+      "example": "조선시대에는 임진왜란에 나라를 지킨 이순신(李舜臣)장군이 있다."
+    }
+  ],
+  "056": [
+    {
+      "name": "신사임당",
+      "pronunciation": "シン・サイムダン",
+      "japaneseName": "申師任堂",
+      "example": "신사임당(1504~1551)은 조선 중기의 문인으로, 그녀의 순결과 정절은"
+    },
+    {
+      "name": "이이",
+      "pronunciation": "イ・イ",
+      "japaneseName": "李珥",
+      "example": "아들 이이에게 밖에서 놀 때에"
+    }
+  ],
+  "102": [
+    {
+      "name": "유형원",
+      "pronunciation": "ユ・ヒョンウォン",
+      "japaneseName": "柳馨遠",
+      "example": "실학의 선구자인 유형원(柳馨遠,1622~1673)"
+    },
+    {
+      "name": "이익",
+      "pronunciation": "イ・イク",
+      "japaneseName": "李瀷",
+      "example": "과 이익(李溟, 1681~1763) 등은 사회를 개혁하기 위해 여러 정책을…"
+    },
+    {
+      "name": "정약용",
+      "pronunciation": "チョン・ヤギョン",
+      "japaneseName": "丁若鏞",
+      "example": "특히 정약용(丁若鏞, 1762~1836)은 조선 후기 서학과 기독교를 받아"
+    }
+  ],
+  "064": [
+    {
+      "name": "이익",
+      "pronunciation": "イ・イク",
+      "japaneseName": "李瀷",
+      "example": "정체성을 없애고자 흰옷을 착용한 사람에게 행정상 불이익을 주거"
+    }
+  ],
+  "118": [
+    {
+      "name": "이익",
+      "pronunciation": "イ・イク",
+      "japaneseName": "李瀷",
+      "example": "먼저가톨릭은 중국을 통해 이익과 안정복 등이 학문적 관점에서"
+    },
+    {
+      "name": "이승훈",
+      "pronunciation": "イ・スンフン",
+      "japaneseName": "李承薫",
+      "example": "1784 년 이승훈이 이벽의 지도에 따라 중국으로 가서 첫 세례를 받았"
+    }
+  ],
+  "186": [
+    {
+      "name": "이익",
+      "pronunciation": "イ・イク",
+      "japaneseName": "李瀷",
+      "example": "할 유엔의 역할이 자국 이익 우선주의에 함몰되면서 본래의 기능을"
+    }
+  ],
+  "098": [
+    {
+      "name": "최치원",
+      "pronunciation": "チェ・チウォン",
+      "japaneseName": "崔致遠",
+      "example": "신라의 학자였던 최치원(崔致遠, 857~908 이후)은 유교와 불교, 도교에"
+    },
+    {
+      "name": "한용운",
+      "pronunciation": "ハン・ヨンウン",
+      "japaneseName": "韓龍雲",
+      "example": "이끌고 나섰으며 일제강점기 승려였던 한용운은 불교유신론을 통해"
+    },
+    {
+      "name": "원효",
+      "pronunciation": "ウォニョ",
+      "japaneseName": "元暁",
+      "example": "대한 깊은 이해를 가지고 유불선 통합사상을 제시하였으며 원효대사"
+    }
+  ],
+  "044": [
+    {
+      "name": "최제우",
+      "pronunciation": "チェ・ジェウ",
+      "japaneseName": "崔濟愚",
+      "example": "동학은 19 세기중반 최제우가 보국안민(나랏일을 돕고 백성을 평안하게"
+    }
+  ],
+  "107": [
+    {
+      "name": "최제우",
+      "pronunciation": "チェ・ジェウ",
+      "japaneseName": "崔濟愚",
+      "example": "최제우는 하늘의 마음이 곧 사람의 마음이니, 한울님 곧 마음을"
+    },
+    {
+      "name": "최시형",
+      "pronunciation": "チェ・シヒョン",
+      "japaneseName": "崔時亨",
+      "example": "희는 동학을 천도교로 개명하고 최제우 , 최시형의 사상을 계승하여"
+    }
+  ],
+  "045": [
+    {
+      "name": "손병희",
+      "pronunciation": "ソン・ビョンヒ",
+      "japaneseName": "孫秉熙",
+      "example": "운동의 민족대표 33 인 중 중심역할을 했던 손병희가 동학을 발전시켜"
+    }
+  ],
+  "132": [
+    {
+      "name": "손병희",
+      "pronunciation": "ソン・ビョンヒ",
+      "japaneseName": "孫秉熙",
+      "example": "손병희(孫秉熙)와 권동진(權東鐵)·오세창(吳世昌)·최린(崔麟) 등의 중진들이"
+    },
+    {
+      "name": "최린",
+      "pronunciation": "チェ・リン",
+      "japaneseName": "崔麟",
+      "example": "손병희(孫秉熙)와 권동진(權東鐵)·오세창(吳世昌)·최린(崔麟) 등의 중진들이"
+    },
+    {
+      "name": "오세창",
+      "pronunciation": "オ・セチャン",
+      "japaneseName": "吳世昌",
+      "example": "손병희(孫秉熙)와 권동진(權東鐵)·오세창(吳世昌)·최린(崔麟) 등의 중진들이"
+    },
+    {
+      "name": "권동진",
+      "pronunciation": "クォン・ドンジン",
+      "japaneseName": "權東鎭",
+      "example": "손병희(孫秉熙)와 권동진(權東鐵)·오세창(吳世昌)·최린(崔麟) 등의 중진들이"
+    }
+  ],
+  "140": [
+    {
+      "name": "김구",
+      "pronunciation": "キム・グ",
+      "japaneseName": "金九",
+      "example": "김구 등 많은 민족지도"
+    }
+  ],
+  "076": [
+    {
+      "name": "안중근",
+      "pronunciation": "アン・ジュングン",
+      "japaneseName": "安重根",
+      "example": "이회영, 안중근, 유관순 등"
+    },
+    {
+      "name": "유관순",
+      "pronunciation": "ユ・グァンスン",
+      "japaneseName": "柳寛順",
+      "example": "이회영, 안중근, 유관순 등"
+    },
+    {
+      "name": "이회영",
+      "pronunciation": "イ・フェヨン",
+      "japaneseName": "李會榮",
+      "example": "이회영, 안중근, 유관순 등"
+    }
+  ],
+  "078": [
+    {
+      "name": "안중근",
+      "pronunciation": "アン・ジュングン",
+      "japaneseName": "安重根",
+      "example": "안중근(安重根)은 1909 년 하얼빈에서 이토 히로부미를 저격하여 조"
+    }
+  ],
+  "079": [
+    {
+      "name": "유관순",
+      "pronunciation": "ユ・グァンスン",
+      "japaneseName": "柳寛順",
+      "example": "유관순(柳寬順)은 1919 년 3·1 운동 당시 18 세의 어린 소녀로 만…"
+    }
+  ],
+  "077": [
+    {
+      "name": "이회영",
+      "pronunciation": "イ・フェヨン",
+      "japaneseName": "李會榮",
+      "example": "이회영(李會榮)은 명문가에서 태어나 기독교를 받아들인 신실한 신"
+    }
+  ],
+  "080": [
+    {
+      "name": "신채호",
+      "pronunciation": "シン・チェホ",
+      "japaneseName": "申采浩",
+      "example": "신채호(申采浩)는 일제강점기 '조선상고사(朝鮮上古史)'를 통해 한민족의"
+    }
+  ],
+  "133": [
+    {
+      "name": "한용운",
+      "pronunciation": "ハン・ヨンウン",
+      "japaneseName": "韓龍雲",
+      "example": "회는 독립운동의 중요한 거점이 되었고 한용운(韓龍雲) 등의 불교지도"
+    },
+    {
+      "name": "이승훈",
+      "pronunciation": "イ・スンフン",
+      "japaneseName": "李承薫",
+      "example": "이승훈(李昇薰) 등의 기독교지도자들이 만세운동에 합류하면서 교"
+    }
+  ],
+  "119": [
+    {
+      "name": "이수정",
+      "pronunciation": "イ・スジョン",
+      "japaneseName": "李樹廷",
+      "example": "또한 1883 년 일본에서 개신교에 입교한 이수정(李樹"
+    }
+  ],
+  "073": [
+    {
+      "name": "고경명",
+      "pronunciation": "コ・ギョンミョン",
+      "japaneseName": "高敬命",
+      "example": "전라도를 중심으로 활동한 고경명(高敬命)은 의병을 조직하여"
+    }
+  ],
+  "141": [
+    {
+      "name": "김일성",
+      "pronunciation": "キム・イルソン",
+      "japaneseName": "金日成",
+      "example": "1950 년 김일성의 북한정권은 한반도를 공산화하기 위해 남한을 침"
+    }
+  ],
+  "174": [
+    {
+      "name": "김일성",
+      "pronunciation": "キム・イルソン",
+      "japaneseName": "金日成",
+      "example": "초프 소련 대통령과 사탄세계의 재림주형 인물인 김일성 북한 주석을 만나"
+    }
+  ],
+  "155": [
+    {
+      "name": "문선명",
+      "pronunciation": "ムン・ソンミョン",
+      "japaneseName": "文鮮明",
+      "example": "또한 재림메시아로 문선명 참아버님을 소"
+    }
+  ],
+  "156": [
+    {
+      "name": "한학자",
+      "pronunciation": "ハン・ハクチャ",
+      "japaneseName": "韓鶴子",
+      "example": "독생녀 한학자 참어머님은 평안남도 안주에 강림하였다."
+    }
+  ],
+  "100": [
+    {
+      "name": "이황",
+      "pronunciation": "イ・ファン",
+      "japaneseName": "李滉",
+      "example": "특히 동방의 주자라 불린 이황(李滉, 1501~1570)은'이기이원론(理氣…"
+    }
+  ],
+  "101": [
+    {
+      "name": "이이",
+      "pronunciation": "イ・イ",
+      "japaneseName": "李珥",
+      "example": "보다 현실적이고 실 용 적인 관점을 가지 고 있었던 이이 ( 李珥 ,"
+    }
+  ]
+};

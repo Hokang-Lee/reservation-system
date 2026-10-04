@@ -219,6 +219,13 @@ button:hover{ background:#d1d5db; }
 .daily-korean-expression-pronunciation{ margin-top:2px; color:#0f766e; font-size:14px; font-weight:700; overflow-wrap:anywhere; }
 .daily-korean-expression-meaning{ margin-top:3px; color:#334155; font-size:14px; overflow-wrap:anywhere; }
 .daily-korean-expression-example{ margin-top:4px; color:#475569; font-size:14px; overflow-wrap:anywhere; }
+.daily-korean-person{
+  margin:7px 0 10px; padding:9px 12px; border-left:5px solid #0f766e;
+  border-radius:8px; background:#f0fdfa; color:#134e4a; line-height:1.55;
+}
+.daily-korean-person-label{ display:block; margin-bottom:2px; color:#0f766e; font-size:13px; font-weight:800; }
+.daily-korean-person-name{ color:#0f766e; font-size:16px; font-weight:800; overflow-wrap:anywhere; }
+.daily-korean-person-detail{ margin-top:3px; color:#334155; font-size:14px; overflow-wrap:anywhere; }
 .pdf-status{
   margin:24px auto; padding:16px; max-width:420px; border-radius:10px;
   background:#fff; text-align:center; font-size:17px; line-height:1.6;
@@ -267,6 +274,8 @@ button:hover{ background:#d1d5db; }
   .daily-comment-button{ width:92px; padding:7px 6px; font-size:14px; }
   .daily-korean-expression{ padding:8px 10px; }
   .daily-korean-expression-term{ font-size:15px; }
+  .daily-korean-person{ padding:8px 10px; }
+  .daily-korean-person-name{ font-size:15px; }
   .title:first-child{ margin-top:0; }
   .remain{ margin:6px 2px 8px; font-size:14px; }
   .row{
@@ -364,7 +373,7 @@ button:hover{ background:#d1d5db; }
 <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
 <script src="document-pages.js"></script>
 <script src="document-snippets.js"></script>
-<script src="korean-expressions.js?v=ipa-audit-1"></script>
+<script src="korean-expressions.js?v=people-audit-1"></script>
 <script>
 firebase.initializeApp({
   apiKey:"AIzaSyDvjXQ5xX_jwcHcXnESjjJalCq2xqL2qIw",
@@ -1268,6 +1277,18 @@ function getDailyKoreanWords(date){
     .map(offset => wordList[(dayIndex * 2 + offset) % wordList.length]);
 }
 
+function getDailyKoreanPerson(date){
+  const peopleByDocument = window.KOREAN_PEOPLE_BY_DOCUMENT;
+  if(!peopleByDocument) return null;
+  const documentIds = getSeatList(date)
+    .filter(seat => seat <= 192)
+    .map(formatSeat);
+  const candidates = documentIds.flatMap(id => peopleByDocument[id] || []);
+  if(!candidates.length) return null;
+  const roundIndex = Math.floor(diffDays(parseDateLocal(ROUND_START), parseDateLocal(date)) / ROUND_DAYS);
+  return candidates[roundIndex % candidates.length];
+}
+
 async function editNormalSeat(date, seat, currentName){
   const d = parseDateLocal(date);
   const today = new Date();
@@ -1441,6 +1462,33 @@ function render(data){
 
       expressionBox.append(expressionLabel, expressionList);
       app.appendChild(expressionBox);
+    }
+
+    const person = getDailyKoreanPerson(date);
+    if(person){
+      const personBox = document.createElement("div");
+      personBox.className = "daily-korean-person";
+      personBox.setAttribute("role", "note");
+      personBox.setAttribute("aria-label", `${date} の韓国人物`);
+
+      const personLabel = document.createElement("span");
+      personLabel.className = "daily-korean-person-label";
+      personLabel.textContent = "今日の韓国人物";
+
+      const personName = document.createElement("div");
+      personName.className = "daily-korean-person-name";
+      personName.textContent = `${person.name}（${person.pronunciation}）`;
+
+      const personDetail = document.createElement("div");
+      personDetail.className = "daily-korean-person-detail";
+      personDetail.textContent = `日本語名：${person.japaneseName}`;
+
+      const personExample = document.createElement("div");
+      personExample.className = "daily-korean-person-detail";
+      personExample.textContent = `本文：${person.example}`;
+
+      personBox.append(personLabel, personName, personDetail, personExample);
+      app.appendChild(personBox);
     }
 
     // ===== 1日目：縦並び（席番号＋名前表示＋予約/編集）=====
