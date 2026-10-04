@@ -45,14 +45,14 @@ window.KOREAN_WORD_LIST = [
   {
     "word": "한반도",
     "pronunciation": "ハンバンド",
-    "ipa": "han.pan.do",
+    "ipa": "han.ban.do",
     "meaning": "朝鮮半島",
     "example": "한반도를 둘러싼 군사적 긴장이 최고조에 이르고 있으며 내외적 국가"
   },
   {
     "word": "기독교",
     "pronunciation": "キドッキョ",
-    "ipa": "ki.dok.kjo",
+    "ipa": "ki.dok.k͈jo",
     "meaning": "キリスト教",
     "example": "시조의 타락으로 인해, 하늘부모님의 섭리는 이스라엘 민족과 기독교"
   },
@@ -149,7 +149,7 @@ window.KOREAN_WORD_LIST = [
   },
   {
     "word": "인류",
-    "pronunciation": "インニュ",
+    "pronunciation": "インリュ",
     "ipa": "il.lju",
     "meaning": "人類",
     "example": "인류력사는 그 자분으로 서사입니다."
@@ -213,7 +213,7 @@ window.KOREAN_WORD_LIST = [
   {
     "word": "신앙",
     "pronunciation": "シナン",
-    "ipa": "ɕin.aŋ",
+    "ipa": "ɕi.naŋ",
     "meaning": "信仰",
     "example": "한민족은 고대부터 하늘부모님과 깊은 신앙적"
   },
@@ -360,7 +360,7 @@ window.KOREAN_WORD_LIST = [
   {
     "word": "발전",
     "pronunciation": "パルチョン",
-    "ipa": "pal.dʑʌn",
+    "ipa": "pal.tɕ͈ʌn",
     "meaning": "発展",
     "example": "으로 전 인류가 지지하고 발전해 나온 공의(公儀)정신에 입각한 민족적"
   },
@@ -409,7 +409,7 @@ window.KOREAN_WORD_LIST = [
   {
     "word": "축복",
     "pronunciation": "チュクポク",
-    "ipa": "tɕʰuk.pok",
+    "ipa": "tɕʰuk.p͈ok",
     "meaning": "祝福",
     "example": "여 만물을 주관하라\"는 축복을 주셨습니다."
   },
