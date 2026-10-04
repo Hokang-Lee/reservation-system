@@ -704,6 +704,52 @@ window.KOREAN_PEOPLE_BY_DOCUMENT = {
       "example": "손병희(孫秉熙)와 권동진(權東鐵)·오세창(吳世昌)·최린(崔麟) 등의 중진들이"
     }
   ],
+  "121": [
+    {
+      "name": "김익두",
+      "pronunciation": "キム・イクド",
+      "japaneseName": "金益斗",
+      "example": "김익두 목사, 이용도 목사 등을 통해 전국적으로 확산되었다."
+    },
+    {
+      "name": "이용도",
+      "pronunciation": "イ・ヨンド",
+      "japaneseName": "李龍道",
+      "example": "김익두 목사, 이용도 목사 등을 통해 전국적으로 확산되었다."
+    }
+  ],
+  "147": [
+    {
+      "name": "이용도",
+      "pronunciation": "イ・ヨンド",
+      "japaneseName": "李龍道",
+      "example": "형 신령공동체로는 백남주, 이용도, 김백문 등이 나타나 기독교의 신"
+    }
+  ],
+  "150": [
+    {
+      "name": "이용도",
+      "pronunciation": "イ・ヨンド",
+      "japaneseName": "李龍道",
+      "example": "부터 3 년간 이용도 목사의 새예수교회에서 신앙생활을 하면서 재림주"
+    }
+  ],
+  "153": [
+    {
+      "name": "이용도",
+      "pronunciation": "イ・ヨンド",
+      "japaneseName": "李龍道",
+      "example": "이용도 목사가 새예수교회를 설립할 때 함께 참여하여 중앙선도원교"
+    }
+  ],
+  "122": [
+    {
+      "name": "길선주",
+      "pronunciation": "キル・ソンジュ",
+      "japaneseName": "吉善宙",
+      "example": "이러한 대부흥운동을 이끈 길선주 목사는 평안남도 안주 출신으"
+    }
+  ],
   "140": [
     {
       "name": "김구",
