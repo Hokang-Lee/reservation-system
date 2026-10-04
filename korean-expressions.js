@@ -78,13 +78,6 @@ window.KOREAN_WORD_LIST = [
     "example": "름으로 불렸으며 , 우리 민족은 하늘, 한울님, 하느님 하나님으로 그"
   },
   {
-    "word": "환웅",
-    "pronunciation": "ファヌン",
-    "ipa": "hwan.uŋ",
-    "meaning": "桓雄",
-    "example": "한울님) 환인의 아들 환웅(桓雄)은 인간 세상을 다스리기 위해 하늘에서"
-  },
-  {
     "word": "호랑이",
     "pronunciation": "ホランイ",
     "ipa": "ho.ɾaŋ.i",
@@ -132,13 +125,6 @@ window.KOREAN_WORD_LIST = [
     "ipa": "il.bon.ɡun",
     "meaning": "日本軍",
     "example": "의장군'으로 불리며, 경상도 의령에서 의병을 일으켜 일본군과 싸웠"
-  },
-  {
-    "word": "김일성",
-    "pronunciation": "キム・イルソン",
-    "ipa": "kim.il.s͈ʌŋ",
-    "meaning": "金日成",
-    "example": "1950 년 김일성의 북한정권은 한반도를 공산화하기 위해 남한을 침"
   },
   {
     "word": "역사",
@@ -1954,13 +1940,6 @@ window.KOREAN_WORDS_BY_DOCUMENT = {
       "ipa": "han.ban.do",
       "meaning": "朝鮮半島",
       "example": "이끌고 만주평원과 한반도를 잇는 태백산(지금의 백두산)의 신단수(神檀"
-    },
-    {
-      "word": "환웅",
-      "pronunciation": "ファヌン",
-      "ipa": "hwan.uŋ",
-      "meaning": "桓雄",
-      "example": "한울님) 환인의 아들 환웅(桓雄)은 인간 세상을 다스리기 위해 하늘에서"
     },
     {
       "word": "인류",
@@ -6053,13 +6032,6 @@ window.KOREAN_WORDS_BY_DOCUMENT = {
       "example": "이후 하늘부모님이 바라시는 한반도 통일을 시작으로 평화세"
     },
     {
-      "word": "김일성",
-      "pronunciation": "キム・イルソン",
-      "ipa": "kim.il.s͈ʌŋ",
-      "meaning": "金日成",
-      "example": "초프 소련 대통령과 사탄세계의 재림주형 인물인 김일성 북한 주석을 만나"
-    },
-    {
       "word": "세계",
       "pronunciation": "セゲ",
       "ipa": "se.ɡje",
@@ -9835,13 +9807,6 @@ window.KOREAN_WORDS_BY_DOCUMENT = {
       "example": "1950 년 김일성의 북한정권은 한반도를 공산화하기 위해 남한을 침"
     },
     {
-      "word": "김일성",
-      "pronunciation": "キム・イルソン",
-      "ipa": "kim.il.s͈ʌŋ",
-      "meaning": "金日成",
-      "example": "1950 년 김일성의 북한정권은 한반도를 공산화하기 위해 남한을 침"
-    },
-    {
       "word": "한국",
       "pronunciation": "ハングク",
       "ipa": "han.ɡuk",
@@ -10359,13 +10324,6 @@ window.KOREAN_WORDS_BY_DOCUMENT = {
     }
   ],
   "024": [
-    {
-      "word": "환웅",
-      "pronunciation": "ファヌン",
-      "ipa": "hwan.uŋ",
-      "meaning": "桓雄",
-      "example": "어느 날 곰과 호랑이가 환웅을 찾아가 사람이 되고자 환웅에게 빌"
-    },
     {
       "word": "호랑이",
       "pronunciation": "ホランイ",

@@ -118,7 +118,11 @@ document_sentences = [sentences for _, sentences in documents]
 # a word must never be shown for a day whose source documents do not contain it.
 words = []
 words_by_document = {}
+person_names = {name for name, _, _ in PEOPLE}
 for word, meaning, pronunciation in GLOSSARY:
+    # 人名は「今日の韓国人物」だけで扱う。重要単語欄との二重表示を防ぐ。
+    if word in person_names:
+        continue
     example = next(
         (
             sentence
