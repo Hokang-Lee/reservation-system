@@ -373,7 +373,7 @@ button:hover{ background:#d1d5db; }
 <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
 <script src="document-pages.js"></script>
 <script src="document-snippets.js"></script>
-<script src="korean-expressions.js?v=people-audit-3"></script>
+<script src="korean-expressions.js?v=people-audit-4"></script>
 <script>
 firebase.initializeApp({
   apiKey:"AIzaSyDvjXQ5xX_jwcHcXnESjjJalCq2xqL2qIw",
@@ -1277,16 +1277,61 @@ function getDailyKoreanWords(date){
     .map(offset => wordList[(dayIndex * 2 + offset) % wordList.length]);
 }
 
-function getDailyKoreanPerson(date){
+function getDailyKoreanPersonCandidates(date){
   const peopleByDocument = window.KOREAN_PEOPLE_BY_DOCUMENT;
-  if(!peopleByDocument) return null;
+  if(!peopleByDocument) return [];
   const documentIds = getSeatList(date)
     .filter(seat => seat <= 192)
     .map(formatSeat);
-  const candidates = documentIds.flatMap(id => peopleByDocument[id] || []);
-  if(!candidates.length) return null;
-  const roundIndex = Math.floor(diffDays(parseDateLocal(ROUND_START), parseDateLocal(date)) / ROUND_DAYS);
-  return candidates[roundIndex % candidates.length];
+  // 同じ人物が複数の文書に出る場合も、候補は一人として扱う。
+  return [...new Map(
+    documentIds
+      .flatMap(id => peopleByDocument[id] || [])
+      .map(person => [person.name, person])
+  ).values()];
+}
+
+function buildDailyKoreanPersonPlan(){
+  const plan = new Map();
+  let roundStart = null;
+  let namesShownThisRound = new Set();
+  const lastShown = new Map();
+
+  for(let d = parseDateLocal(ROUND_START); d <= parseDateLocal(config.validUntil); d = addDays(d, 1)){
+    const date = formatDateLocal(d);
+    const currentRoundStart = Math.floor(diffDays(parseDateLocal(ROUND_START), d) / ROUND_DAYS);
+    if(currentRoundStart !== roundStart){
+      roundStart = currentRoundStart;
+      namesShownThisRound = new Set();
+    }
+
+    const candidates = getDailyKoreanPersonCandidates(date);
+    if(!candidates.length) continue;
+
+    // 同一ラウンド内で未表示の人物だけを選ぶ。候補がすでに表示済み
+    // なら、この日は人物欄を出さない。重複表示よりも優先する。
+    const unused = candidates.filter(person => !namesShownThisRound.has(person.name));
+    if(!unused.length) continue;
+    const pool = unused;
+    pool.sort((a, b) => {
+      const aLast = lastShown.get(a.name) ?? -Infinity;
+      const bLast = lastShown.get(b.name) ?? -Infinity;
+      if(aLast !== bLast) return aLast - bLast;
+      return a.name.localeCompare(b.name, "ko");
+    });
+
+    const selected = pool[0];
+    plan.set(date, selected);
+    namesShownThisRound.add(selected.name);
+    lastShown.set(selected.name, diffDays(parseDateLocal(ROUND_START), d));
+  }
+  return plan;
+}
+
+const dailyKoreanPersonPlan = buildDailyKoreanPersonPlan();
+
+function getDailyKoreanPerson(date){
+  return dailyKoreanPersonPlan.get(date) || null;
 }
 
 async function editNormalSeat(date, seat, currentName){
