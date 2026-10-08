@@ -317,6 +317,14 @@ button:hover{ background:#d1d5db; }
   }
   .seekbar-wrap{ grid-area:seek; }
 }
+.japanese-reader{ display:flex; align-items:center; gap:8px; color:#1e3a5f; }
+.japanese-reader span{ overflow-wrap:anywhere; min-width:0; }
+.japanese-reader button{ background:#15803d; color:white; font-weight:700; flex-shrink:0; box-shadow:0 2px 5px rgba(21,128,61,.25); }
+.japanese-reader button:hover{ background:#166534; }
+@media(max-width:768px){
+  .row{ grid-template-areas:"actions edit" "preview edit" "label edit" "japanese japanese" "seek seek"; }
+  .japanese-reader{ grid-area:japanese; justify-content:space-between; padding-top:6px; border-top:1px solid #bfdbfe; }
+}
 </style>
 </head>
 <body>
@@ -481,7 +489,8 @@ function refreshRememberedNameSelect(){
   area.style.display = names.length ? "block" : "none";
 }
 
-function askReservationName(currentName = ""){
+function askReservationName(currentName = "", title = "予約する名前"){
+  document.getElementById("nameDialogTitle").textContent = title;
   const backdrop = document.getElementById("nameDialogBackdrop");
   const form = document.getElementById("nameDialog");
   const input = document.getElementById("reservationNameInput");
@@ -635,8 +644,6 @@ let currentRow   = null;
 let currentBtn   = null;
 let userStopped  = false;
 let seekTimer    = null;
-
-
 // PDF/実ページを開いている間は停止抑止
 let suppressStopForPdf = false;
 let pdfModalOpen = false;
@@ -1391,19 +1398,43 @@ async function editNormalSeat(date, seat, currentName){
     return;
   }
 
-  const input = await askReservationName(currentName || "");
+  const japaneseReader = String(seat).startsWith("_j");
+  const input = await askReservationName(currentName || "", japaneseReader ? "日本語の読み手（日読）" : "予約する名前");
   if(input === null) return;
 
   const ref = db.ref(`reservations/${date}/${seat}`);
   const trimmed = input.trim();
   if(trimmed === ""){
-    if(currentName && !confirmDeletion(`${date} の ${seat}番の予約`)) return;
-    ref.remove();
+    if(currentName && !confirmDeletion(`${date} の ${japaneseReader ? String(seat).slice(2) : seat}番の${japaneseReader ? "日本語の読み手" : "予約"}`)) return;
+    try{
+      await ref.remove();
+    }catch(_){
+      alert("予約を削除できませんでした。通信状態を確認して、もう一度お試しください。");
+    }
   }else{
-    rememberName(trimmed);
-    ref.set(trimmed);
+    try{
+      await ref.set(trimmed);
+      rememberName(trimmed);
+    }catch(_){
+      alert("予約を保存できませんでした。通信状態を確認して、もう一度お試しください。");
+    }
   }
 }
+function appendJapaneseReader(row, date, seat, data){
+  const name = data?.[date]?.[`_j${seat}`] || "";
+  const box = document.createElement("div");
+  box.className = "japanese-reader";
+  const label = document.createElement("span");
+  label.textContent = `日：${name}`;
+  const button = document.createElement("button");
+  button.className = "edit";
+  button.textContent = "日読";
+  button.setAttribute("aria-label", `${seat}番の日本語の読み手を編集`);
+  button.onclick = () => editNormalSeat(date, `_j${seat}`, name);
+  box.append(label, button);
+  row.appendChild(box);
+}
+
 function render(data){
   const app = document.getElementById("app");
   app.innerHTML = "";
@@ -1423,7 +1454,7 @@ function render(data){
   today.setHours(0,0,0,0);
 
   dates.slice(0, visibleDateCount).forEach(date => {
-  
+
    // ===== 締め切り：当日06:00、締め切り2時間後(08:00)を過ぎたら非表示 =====
     const now = new Date();
 
@@ -1535,10 +1566,10 @@ function render(data){
         const term = document.createElement("div");
         term.className = "daily-korean-expression-term";
         term.textContent = word.word;
-
-                const pronunciation = document.createElement("div");
+        const pronunciation = document.createElement("div");
         pronunciation.className = "daily-korean-expression-pronunciation";
         pronunciation.textContent = `発音：${word.pronunciation}　IPA：/${word.ipa}/`;
+
 
         const meaning = document.createElement("div");
         meaning.className = "daily-korean-expression-meaning";
@@ -1627,7 +1658,11 @@ function render(data){
           // 空欄＝削除
           if(trimmed === ""){
             if(name && !confirmDeletion(`${date} の ${seat}番の予約`)) return;
-            ref.remove();
+            try{
+              await ref.remove();
+            }catch(_){
+              alert("予約を削除できませんでした。通信状態を確認して、もう一度お試しください。");
+            }
             return;
           }
 
@@ -1637,13 +1672,18 @@ function render(data){
             if(!ok) return;
           }
 
-          rememberName(trimmed);
-          ref.set(trimmed);
+          try{
+            await ref.set(trimmed);
+            rememberName(trimmed);
+          }catch(_){
+            alert("予約を保存できませんでした。通信状態を確認して、もう一度お試しください。");
+          }
         };
 
         row.appendChild(top);
         row.appendChild(label);
         row.appendChild(edit);
+        if(!isChallengeDay) appendJapaneseReader(row, date, seat, data);
 
         app.appendChild(row);
       });
@@ -1819,6 +1859,7 @@ function render(data){
         row.appendChild(label);
         row.appendChild(edit);
       }
+      if(!isChallengeDay) appendJapaneseReader(row, date, seat, data);
       row.appendChild(seekWrap);
 
       app.appendChild(row);
