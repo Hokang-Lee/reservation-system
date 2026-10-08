@@ -319,8 +319,9 @@ button:hover{ background:#d1d5db; }
 }
 .japanese-reader{ display:flex; align-items:center; gap:8px; color:#1e3a5f; }
 .japanese-reader span{ overflow-wrap:anywhere; min-width:0; }
-.japanese-reader button{ background:#15803d; color:white; font-weight:700; flex-shrink:0; box-shadow:0 2px 5px rgba(21,128,61,.25); }
-.japanese-reader button:hover{ background:#166534; }
+.japanese-reader button{ flex-shrink:0; }
+.japanese-reader .japanese-reader-reserve{ background:#15803d; color:white; font-weight:700; box-shadow:0 2px 5px rgba(21,128,61,.25); }
+.japanese-reader .japanese-reader-reserve:hover{ background:#166534; }
 @media(max-width:768px){
   .row{ grid-template-areas:"actions edit" "preview edit" "label edit" "japanese japanese" "seek seek"; }
   .japanese-reader{ grid-area:japanese; justify-content:space-between; padding-top:6px; border-top:1px solid #bfdbfe; }
@@ -1427,8 +1428,8 @@ function appendJapaneseReader(row, date, seat, data){
   const label = document.createElement("span");
   label.textContent = `日：${name}`;
   const button = document.createElement("button");
-  button.className = "edit";
-  button.textContent = "日読";
+  button.className = name ? "edit edit-existing" : "edit japanese-reader-reserve";
+  button.textContent = name ? "編集" : "日読";
   button.setAttribute("aria-label", `${seat}番の日本語の読み手を編集`);
   button.onclick = () => editNormalSeat(date, `_j${seat}`, name);
   box.append(label, button);
